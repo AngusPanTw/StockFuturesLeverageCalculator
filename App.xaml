@@ -1,0 +1,10 @@
+<Application x:Class="LeverageCalculator.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:LeverageCalculator"
+             xmlns:converters="clr-namespace:LeverageCalculator.Converters"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+    </Application.Resources>
+</Application>
