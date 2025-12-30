@@ -193,6 +193,15 @@
         <!-- Column 1: Futures -->
         <GroupBox Grid.Column="1" Header="股票期貨庫存" Margin="10,0,0,0" Padding="5">
             <DockPanel>
+                <Border DockPanel.Dock="Top" Background="#FFF0F8FF" BorderBrush="#FFADD8E6" BorderThickness="1" CornerRadius="3" Padding="5" Margin="0,0,0,5">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBlock Text="期貨總損益: " FontWeight="Bold" FontSize="14"/>
+                        <TextBlock Text="{Binding TotalFuturesProfitLoss, StringFormat={}{0:N0}}" Foreground="{Binding TotalFuturesProfitLossColor}" FontWeight="Bold" FontSize="14" Margin="0,0,15,0"/>
+                        <TextBlock Text="總報酬率: " FontWeight="Bold" FontSize="14"/>
+                        <TextBlock Text="{Binding TotalFuturesProfitLossPercentage, StringFormat=P2}" Foreground="{Binding TotalFuturesProfitLossColor}" FontWeight="Bold" FontSize="14"/>
+                    </StackPanel>
+                </Border>
+
                 <GroupBox DockPanel.Dock="Bottom" Header="新增股票期貨" Padding="5">
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>

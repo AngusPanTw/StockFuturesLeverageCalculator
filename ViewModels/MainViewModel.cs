@@ -132,6 +132,23 @@ namespace LeverageCalculator.ViewModels
         /// </summary>
         public string TotalStockProfitLossColor => TotalStockProfitLoss >= 0 ? "Red" : "Green";
 
+        private decimal _totalFuturesProfitLoss;
+        /// <summary>
+        /// 期貨總損益
+        /// </summary>
+        public decimal TotalFuturesProfitLoss { get => _totalFuturesProfitLoss; private set { _totalFuturesProfitLoss = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalFuturesProfitLossColor)); } }
+
+        private double _totalFuturesProfitLossPercentage;
+        /// <summary>
+        /// 期貨總報酬率
+        /// </summary>
+        public double TotalFuturesProfitLossPercentage { get => _totalFuturesProfitLossPercentage; private set { _totalFuturesProfitLossPercentage = value; OnPropertyChanged(); } }
+
+        /// <summary>
+        /// 期貨總損益顏色
+        /// </summary>
+        public string TotalFuturesProfitLossColor => TotalFuturesProfitLoss >= 0 ? "Red" : "Green";
+
         private decimal _totalFuturesExposure;
         /// <summary>
         /// 期貨總曝險
@@ -226,6 +243,10 @@ namespace LeverageCalculator.ViewModels
             TotalStockProfitLossPercentage = totalStockCost != 0 ? (double)(TotalStockProfitLoss / totalStockCost) : 0;
 
             TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
+            TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
+            var totalFuturesCostValue = AllFutures.Sum(f => f.CostPrice * f.SharesPerLot * f.Lots);
+            TotalFuturesProfitLossPercentage = totalFuturesCostValue != 0 ? (double)(TotalFuturesProfitLoss / totalFuturesCostValue) : 0;
+
             TotalExposure = TotalStockValue + TotalFuturesExposure;
             TotalCapital = TotalStockValue + BankCash + StockSettlementAmount + FuturesEquity;
 
