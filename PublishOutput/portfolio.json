@@ -1,0 +1,9 @@
+{
+  "Stocks": [],
+  "UsStocks": [],
+  "Futures": [],
+  "BankCash": 500000,
+  "UsStockCash": 0,
+  "StockSettlementAmount": 0,
+  "FuturesEquity": 0
+}

@@ -21,6 +21,11 @@ namespace LeverageCalculator.ViewModels
         /// 股票庫存列表
         /// </summary>
         public ObservableCollection<StockItemViewModel> Stocks { get; set; }
+
+        /// <summary>
+        /// 美股庫存列表
+        /// </summary>
+        public ObservableCollection<UsStockItemViewModel> UsStocks { get; set; }
         
         /// <summary>
         /// 大台期貨庫存列表
@@ -41,6 +46,12 @@ namespace LeverageCalculator.ViewModels
         /// 銀行現金
         /// </summary>
         public decimal BankCash { get => _bankCash; set { _bankCash = value; OnPropertyChanged(); RecalculateAll(); } }
+
+        private decimal _usStockCash;
+        /// <summary>
+        /// 美股可用現金
+        /// </summary>
+        public decimal UsStockCash { get => _usStockCash; set { _usStockCash = value; OnPropertyChanged(); RecalculateAll(); } }
 
         private decimal _stockSettlementAmount;
         /// <summary>
@@ -75,6 +86,28 @@ namespace LeverageCalculator.ViewModels
         /// 新增股票總市值
         /// </summary>
         public decimal NewStockMarketValue { get => _newStockMarketValue; set { _newStockMarketValue = value; OnPropertyChanged(); } }
+
+        // --- Add New UsStock ---
+        private string _newUsStockName = "";
+        /// <summary>
+        /// 新增美股名稱
+        /// </summary>
+        public string NewUsStockName { get => _newUsStockName; set { _newUsStockName = value; OnPropertyChanged(); } }
+        private int _newUsStockShares;
+        /// <summary>
+        /// 新增美股股數
+        /// </summary>
+        public int NewUsStockShares { get => _newUsStockShares; set { _newUsStockShares = value; OnPropertyChanged(); } }
+        private decimal _newUsStockTotalCost;
+        /// <summary>
+        /// 新增美股總成本
+        /// </summary>
+        public decimal NewUsStockTotalCost { get => _newUsStockTotalCost; set { _newUsStockTotalCost = value; OnPropertyChanged(); } }
+        private decimal _newUsStockMarketValue;
+        /// <summary>
+        /// 新增美股總市值
+        /// </summary>
+        public decimal NewUsStockMarketValue { get => _newUsStockMarketValue; set { _newUsStockMarketValue = value; OnPropertyChanged(); } }
 
         // --- Add New Future ---
         private string _newFutureName = "";
@@ -132,6 +165,29 @@ namespace LeverageCalculator.ViewModels
         /// </summary>
         public string TotalStockProfitLossColor => TotalStockProfitLoss >= 0 ? "Red" : "Green";
 
+        private decimal _totalUsStockValue;
+        /// <summary>
+        /// 美股總市值
+        /// </summary>
+        public decimal TotalUsStockValue { get => _totalUsStockValue; private set { _totalUsStockValue = value; OnPropertyChanged(); } }
+        
+        private decimal _totalUsStockProfitLoss;
+        /// <summary>
+        /// 美股總損益
+        /// </summary>
+        public decimal TotalUsStockProfitLoss { get => _totalUsStockProfitLoss; private set { _totalUsStockProfitLoss = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalUsStockProfitLossColor)); } }
+
+        private double _totalUsStockProfitLossPercentage;
+        /// <summary>
+        /// 美股總報酬率
+        /// </summary>
+        public double TotalUsStockProfitLossPercentage { get => _totalUsStockProfitLossPercentage; private set { _totalUsStockProfitLossPercentage = value; OnPropertyChanged(); } }
+
+        /// <summary>
+        /// 美股總損益顏色
+        /// </summary>
+        public string TotalUsStockProfitLossColor => TotalUsStockProfitLoss >= 0 ? "Red" : "Green";
+
         private decimal _totalFuturesProfitLoss;
         /// <summary>
         /// 期貨總損益
@@ -154,21 +210,25 @@ namespace LeverageCalculator.ViewModels
         /// 期貨總曝險
         /// </summary>
         public decimal TotalFuturesExposure { get => _totalFuturesExposure; private set { _totalFuturesExposure = value; OnPropertyChanged(); } }
+        
         private decimal _totalExposure;
         /// <summary>
         /// 總曝險 (股票+期貨)
         /// </summary>
         public decimal TotalExposure { get => _totalExposure; private set { _totalExposure = value; OnPropertyChanged(); } }
+        
         private decimal _totalCapital;
         /// <summary>
         /// 總資產 (股票+現金+交割款+權益數)
         /// </summary>
         public decimal TotalCapital { get => _totalCapital; private set { _totalCapital = value; OnPropertyChanged(); } }
+        
         private double _leverage;
         /// <summary>
         /// 槓桿倍數
         /// </summary>
         public double Leverage { get => _leverage; private set { _leverage = value; OnPropertyChanged(); } }
+        
         private string _riskStatus = "";
         /// <summary>
         /// 風險狀態描述
@@ -185,6 +245,14 @@ namespace LeverageCalculator.ViewModels
         /// </summary>
         public ICommand DeleteStockCommand { get; }
         /// <summary>
+        /// 新增美股命令
+        /// </summary>
+        public ICommand AddUsStockCommand { get; }
+        /// <summary>
+        /// 刪除美股命令
+        /// </summary>
+        public ICommand DeleteUsStockCommand { get; }
+        /// <summary>
         /// 新增期貨命令
         /// </summary>
         public ICommand AddFutureCommand { get; }
@@ -199,6 +267,9 @@ namespace LeverageCalculator.ViewModels
 
             Stocks = new ObservableCollection<StockItemViewModel>();
             Stocks.CollectionChanged += OnCollectionChanged;
+
+            UsStocks = new ObservableCollection<UsStockItemViewModel>();
+            UsStocks.CollectionChanged += OnCollectionChanged;
             
             LargeFutures = new ObservableCollection<FutureItemViewModel>();
             LargeFutures.CollectionChanged += OnCollectionChanged;
@@ -208,6 +279,8 @@ namespace LeverageCalculator.ViewModels
 
             AddStockCommand = new RelayCommand(ExecuteAddStock);
             DeleteStockCommand = new RelayCommand(ExecuteDeleteStock);
+            AddUsStockCommand = new RelayCommand(ExecuteAddUsStock);
+            DeleteUsStockCommand = new RelayCommand(ExecuteDeleteUsStock);
             AddFutureCommand = new RelayCommand(ExecuteAddFuture);
             DeleteFutureCommand = new RelayCommand(ExecuteDeleteFuture);
             
@@ -242,13 +315,18 @@ namespace LeverageCalculator.ViewModels
             TotalStockProfitLoss = TotalStockValue - totalStockCost;
             TotalStockProfitLossPercentage = totalStockCost != 0 ? (double)(TotalStockProfitLoss / totalStockCost) : 0;
 
+            TotalUsStockValue = UsStocks.Sum(s => s.MarketValue);
+            var totalUsStockCost = UsStocks.Sum(s => s.TotalCost);
+            TotalUsStockProfitLoss = TotalUsStockValue - totalUsStockCost;
+            TotalUsStockProfitLossPercentage = totalUsStockCost != 0 ? (double)(TotalUsStockProfitLoss / totalUsStockCost) : 0;
+
             TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
             TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
             var totalFuturesCostValue = AllFutures.Sum(f => f.CostPrice * f.SharesPerLot * f.Lots);
             TotalFuturesProfitLossPercentage = totalFuturesCostValue != 0 ? (double)(TotalFuturesProfitLoss / totalFuturesCostValue) : 0;
 
-            TotalExposure = TotalStockValue + TotalFuturesExposure;
-            TotalCapital = TotalStockValue + BankCash + StockSettlementAmount + FuturesEquity;
+            TotalExposure = TotalStockValue + TotalUsStockValue + TotalFuturesExposure;
+            TotalCapital = TotalStockValue + TotalUsStockValue + BankCash + UsStockCash + StockSettlementAmount + FuturesEquity;
 
             if (TotalCapital > 0)
             {
@@ -288,6 +366,32 @@ namespace LeverageCalculator.ViewModels
             if (obj is StockItemViewModel stock)
             {
                 Stocks.Remove(stock);
+            }
+        }
+
+        private void ExecuteAddUsStock(object? obj)
+        {
+            var newUsStock = new UsStockItem
+            {
+                Name = NewUsStockName,
+                Shares = NewUsStockShares,
+                TotalCost = NewUsStockTotalCost,
+                MarketValue = NewUsStockMarketValue
+            };
+            UsStocks.Add(new UsStockItemViewModel(newUsStock));
+            
+            // Clear inputs
+            NewUsStockName = "";
+            NewUsStockShares = 0;
+            NewUsStockTotalCost = 0;
+            NewUsStockMarketValue = 0;
+        }
+
+        private void ExecuteDeleteUsStock(object? obj)
+        {
+            if (obj is UsStockItemViewModel stock)
+            {
+                UsStocks.Remove(stock);
             }
         }
         
@@ -346,6 +450,7 @@ namespace LeverageCalculator.ViewModels
             }
 
             BankCash = portfolio.BankCash;
+            UsStockCash = portfolio.UsStockCash;
             StockSettlementAmount = portfolio.StockSettlementAmount;
             FuturesEquity = portfolio.FuturesEquity;
 
@@ -353,6 +458,12 @@ namespace LeverageCalculator.ViewModels
             foreach (var stock in portfolio.Stocks)
             {
                 Stocks.Add(new StockItemViewModel(stock));
+            }
+
+            UsStocks.Clear();
+            foreach (var stock in portfolio.UsStocks)
+            {
+                UsStocks.Add(new UsStockItemViewModel(stock));
             }
 
             LargeFutures.Clear();
@@ -377,10 +488,12 @@ namespace LeverageCalculator.ViewModels
         {
             var portfolio = new Portfolio
             {
+                UsStockCash = this.UsStockCash,
                 BankCash = this.BankCash,
                 StockSettlementAmount = this.StockSettlementAmount,
                 FuturesEquity = this.FuturesEquity,
                 Stocks = this.Stocks.Select(vm => vm.Model).ToList(),
+                UsStocks = this.UsStocks.Select(vm => vm.Model).ToList(),
                 Futures = this.AllFutures.Select(vm => vm.Model).ToList()
             };
             _storageService.SavePortfolio(portfolio);
