@@ -238,13 +238,15 @@ namespace LeverageCalculator.ViewModels
         private void RecalculateAll()
         {
             TotalStockValue = Stocks.Sum(s => s.MarketValue);
-            var totalStockCost = Stocks.Sum(s => s.TotalCost);
+            decimal totalStockCost = Stocks.Sum(s => s.TotalCost);
             TotalStockProfitLoss = TotalStockValue - totalStockCost;
             TotalStockProfitLossPercentage = totalStockCost != 0 ? (double)(TotalStockProfitLoss / totalStockCost) : 0;
 
             TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
             TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
-            var totalFuturesCostValue = AllFutures.Sum(f => f.CostPrice * f.SharesPerLot * f.Lots);
+            TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
+            TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
+            decimal totalFuturesCostValue = AllFutures.Sum(f => f.CostPrice * f.SharesPerLot * f.Lots);
             TotalFuturesProfitLossPercentage = totalFuturesCostValue != 0 ? (double)(TotalFuturesProfitLoss / totalFuturesCostValue) : 0;
 
             TotalExposure = TotalStockValue + TotalFuturesExposure;
@@ -267,7 +269,7 @@ namespace LeverageCalculator.ViewModels
 
         private void ExecuteAddStock(object? obj)
         {
-            var newStock = new StockItem
+            StockItem newStock = new StockItem
             {
                 Name = NewStockName,
                 Shares = NewStockShares,
@@ -276,7 +278,11 @@ namespace LeverageCalculator.ViewModels
             };
             Stocks.Add(new StockItemViewModel(newStock));
             
-            // Clear inputs
+            ClearStockInputs();
+        }
+
+        private void ClearStockInputs()
+        {
             NewStockName = "";
             NewStockShares = 0;
             NewStockTotalCost = 0;
@@ -293,7 +299,7 @@ namespace LeverageCalculator.ViewModels
         
         private void ExecuteAddFuture(object? obj)
         {
-            var newFuture = new FutureItem
+            FutureItem newFuture = new FutureItem
             {
                 Name = NewFutureName,
                 Lots = NewFutureLots,
@@ -303,7 +309,7 @@ namespace LeverageCalculator.ViewModels
                 IsSmallContract = NewFutureIsSmallContract
             };
             
-            var vm = new FutureItemViewModel(newFuture);
+            FutureItemViewModel vm = new FutureItemViewModel(newFuture);
             if (newFuture.IsSmallContract)
             {
                 SmallFutures.Add(vm);
@@ -313,12 +319,17 @@ namespace LeverageCalculator.ViewModels
                 LargeFutures.Add(vm);
             }
 
-            // Clear inputs
+            ClearFutureInputs();
+        }
+
+        private void ClearFutureInputs()
+        {
             NewFutureName = "";
             NewFutureLots = 0;
             NewFutureCostPrice = 0;
             NewFutureCurrentPrice = 0;
             NewFutureIsSmallContract = false;
+            // Keep Position as is or reset to default if desired, following original logic (implied keep or user pref)
         }
 
         private void ExecuteDeleteFuture(object? obj)
@@ -338,7 +349,7 @@ namespace LeverageCalculator.ViewModels
 
         private void LoadData()
         {
-            var portfolio = _storageService.LoadPortfolio();
+            Portfolio? portfolio = _storageService.LoadPortfolio();
             if (portfolio == null) 
             {
                 RecalculateAll();
@@ -350,16 +361,16 @@ namespace LeverageCalculator.ViewModels
             FuturesEquity = portfolio.FuturesEquity;
 
             Stocks.Clear();
-            foreach (var stock in portfolio.Stocks)
+            foreach (StockItem stock in portfolio.Stocks)
             {
                 Stocks.Add(new StockItemViewModel(stock));
             }
 
             LargeFutures.Clear();
             SmallFutures.Clear();
-            foreach (var future in portfolio.Futures)
+            foreach (FutureItem future in portfolio.Futures)
             {
-                var vm = new FutureItemViewModel(future);
+                FutureItemViewModel vm = new FutureItemViewModel(future);
                 if (future.IsSmallContract)
                 {
                     SmallFutures.Add(vm);
@@ -375,7 +386,7 @@ namespace LeverageCalculator.ViewModels
 
         public void SaveData()
         {
-            var portfolio = new Portfolio
+            Portfolio portfolio = new Portfolio
             {
                 BankCash = this.BankCash,
                 StockSettlementAmount = this.StockSettlementAmount,

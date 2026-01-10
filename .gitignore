@@ -288,4 +288,8 @@ project.lock.json
 *.sln.iml
 
 # VS Code
-.vscode/
+
+# Publish Output
+PublishOutput/
+
+

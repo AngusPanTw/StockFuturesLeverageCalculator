@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "publish-single-file",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "publish",
+                "-r",
+                "win-x64",
+                "-c",
+                "Release",
+                "--self-contained",
+                "-p:PublishSingleFile=true",
+                "-p:IncludeNativeLibrariesForSelfExtract=true",
+                "-p:EnableCompressionInSingleFile=true",
+                "-o",
+                "./PublishOutput"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "發布為單一執行檔 (Single File Executable)"
+        }
+    ]
+}
