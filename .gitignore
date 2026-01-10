@@ -289,3 +289,6 @@ project.lock.json
 
 # VS Code
 .vscode/
+
+# Publish Output
+PublishOutput/

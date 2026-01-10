@@ -37,22 +37,6 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
-        /// 總成本
-        /// </summary>
-        public decimal TotalCost
-        {
-            get => _stock.TotalCost;
-            set 
-            { 
-                _stock.TotalCost = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
-            }
-        }
-
-        /// <summary>
         /// 總市值
         /// </summary>
         public decimal MarketValue
@@ -62,21 +46,48 @@ namespace LeverageCalculator.ViewModels
             { 
                 _stock.MarketValue = value; 
                 OnPropertyChanged(); 
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
+                // Market value changed, we don't recalculate profit/loss anymore as it is manual input
             }
         }
         
         /// <summary>
-        /// 未實現損益 (市值 - 成本)
+        /// 未實現損益 (使用者輸入)
         /// </summary>
-        public decimal ProfitLoss => MarketValue - TotalCost;
+        public decimal ProfitLoss 
+        {
+             get => _stock.ProfitLoss;
+             set
+             {
+                 _stock.ProfitLoss = value;
+                 OnPropertyChanged();
+                 OnPropertyChanged(nameof(ProfitLossColor));
+             }
+        }
         
         /// <summary>
-        /// 報酬率 (%)
+        /// 報酬率 (使用者輸入, 儲存原始值 0.1 = 10%)
         /// </summary>
-        public double ProfitLossPercentage => TotalCost != 0 ? (double)(ProfitLoss / TotalCost) : 0;
+        public double ProfitLossPercentage 
+        {
+            get => _stock.ProfitLossPercentage;
+            set
+            {
+                _stock.ProfitLossPercentage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ProfitLossPercentage100)); // Update the display value
+            }
+        }
+
+        /// <summary>
+        /// 報酬率顯示值 (使用者輸入 10 = 10%)
+        /// 用於 UI 綁定，自動轉換百分比
+        /// </summary>
+        public double ProfitLossPercentage100
+        {
+            // Use Math.Round to prevent floating point artifacts (e.g. 0.87 becoming 0.86999...)
+            get => System.Math.Round(ProfitLossPercentage * 100, 6);
+            set => ProfitLossPercentage = value / 100;
+        }
 
         /// <summary>
         /// 損益顏色 (>=0 紅色, <0 綠色)

@@ -12,10 +12,6 @@ namespace LeverageCalculator.Models
         /// </summary>
         public List<StockItem> Stocks { get; set; } = new List<StockItem>();
         /// <summary>
-        /// 期貨列表
-        /// </summary>
-        public List<FutureItem> Futures { get; set; } = new List<FutureItem>();
-        /// <summary>
         /// 銀行可用現金
         /// </summary>
         public decimal BankCash { get; set; }
@@ -23,9 +19,5 @@ namespace LeverageCalculator.Models
         /// 股票交割款 (近三日)
         /// </summary>
         public decimal StockSettlementAmount { get; set; }
-        /// <summary>
-        /// 期貨帳戶權益金
-        /// </summary>
-        public decimal FuturesEquity { get; set; }
     }
 }

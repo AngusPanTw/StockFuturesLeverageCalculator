@@ -33,7 +33,7 @@ namespace LeverageCalculator.Services
 
             try
             {
-                var json = File.ReadAllText(_filePath);
+                string json = File.ReadAllText(_filePath);
                 return JsonSerializer.Deserialize<Portfolio>(json);
             }
             catch
@@ -51,8 +51,8 @@ namespace LeverageCalculator.Services
         {
             try
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                var json = JsonSerializer.Serialize(portfolio, options);
+                JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(portfolio, options);
                 File.WriteAllText(_filePath, json);
             }
             catch

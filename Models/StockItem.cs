@@ -14,9 +14,13 @@ namespace LeverageCalculator.Models
         /// </summary>
         public int Shares { get; set; }
         /// <summary>
-        /// 總成本
+        /// 帳面損益 (使用者輸入)
         /// </summary>
-        public decimal TotalCost { get; set; }
+        public decimal ProfitLoss { get; set; }
+        /// <summary>
+        /// 報酬率 (使用者輸入, 1.5 = 1.5%)
+        /// </summary>
+        public double ProfitLossPercentage { get; set; }
         /// <summary>
         /// 總市值
         /// </summary>
