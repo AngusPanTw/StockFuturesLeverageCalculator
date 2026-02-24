@@ -29,14 +29,11 @@ namespace LeverageCalculator.ViewModels
         public int Lots
         {
             get => _future.Lots;
-            set 
-            { 
-                _future.Lots = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(Exposure));
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
+            set
+            {
+                _future.Lots = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
             }
         }
 
@@ -46,13 +43,11 @@ namespace LeverageCalculator.ViewModels
         public PositionType Position
         {
             get => _future.Position;
-            set 
-            { 
-                _future.Position = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
+            set
+            {
+                _future.Position = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
             }
         }
 
@@ -62,13 +57,11 @@ namespace LeverageCalculator.ViewModels
         public decimal CostPrice
         {
             get => _future.CostPrice;
-            set 
-            { 
-                _future.CostPrice = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
+            set
+            {
+                _future.CostPrice = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
             }
         }
 
@@ -78,14 +71,11 @@ namespace LeverageCalculator.ViewModels
         public decimal CurrentPrice
         {
             get => _future.CurrentPrice;
-            set 
-            { 
-                _future.CurrentPrice = value; 
-                OnPropertyChanged(); 
-                OnPropertyChanged(nameof(Exposure));
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
+            set
+            {
+                _future.CurrentPrice = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
             }
         }
 
@@ -95,18 +85,15 @@ namespace LeverageCalculator.ViewModels
         public bool IsSmallContract
         {
             get => _future.IsSmallContract;
-            set 
-            { 
-                _future.IsSmallContract = value; 
-                OnPropertyChanged(); 
+            set
+            {
+                _future.IsSmallContract = value;
+                OnPropertyChanged();
                 OnPropertyChanged(nameof(SharesPerLot));
-                OnPropertyChanged(nameof(Exposure));
-                OnPropertyChanged(nameof(ProfitLoss));
-                OnPropertyChanged(nameof(ProfitLossPercentage));
-                OnPropertyChanged(nameof(ProfitLossColor));
+                NotifyCalculatedProperties();
             }
         }
-        
+
         /// <summary>
         /// 每口合約股數 (小台100, 大台2000)
         /// </summary>
@@ -120,33 +107,45 @@ namespace LeverageCalculator.ViewModels
         /// <summary>
         /// 未實現損益
         /// </summary>
-        public decimal ProfitLoss 
-        {
-            get 
-            {
-                var diff = Position == PositionType.Long ? (CurrentPrice - CostPrice) : (CostPrice - CurrentPrice);
-                return diff * SharesPerLot * Lots;
-            }
-        }
-        
-        /// <summary>
-        /// 報酬率 (%)
-        /// </summary>
-        public double ProfitLossPercentage 
+        public decimal ProfitLoss
         {
             get
             {
-                var initialValue = CostPrice * SharesPerLot * Lots;
+                decimal diff = Position == PositionType.Long
+                    ? CurrentPrice - CostPrice
+                    : CostPrice - CurrentPrice;
+                return diff * SharesPerLot * Lots;
+            }
+        }
+
+        /// <summary>
+        /// 報酬率 (%)
+        /// </summary>
+        public double ProfitLossPercentage
+        {
+            get
+            {
+                decimal initialValue = CostPrice * SharesPerLot * Lots;
                 return initialValue != 0 ? (double)(ProfitLoss / initialValue) : 0;
             }
         }
 
         /// <summary>
-        /// 損益顏色
+        /// 損益顏色 (&gt;=0 紅色, &lt;0 綠色)
         /// </summary>
         public string ProfitLossColor => ProfitLoss >= 0 ? "Red" : "Green";
 
-        // Expose the model for saving purposes
+        /// <summary>
+        /// 取得底層 Model（供序列化使用）
+        /// </summary>
         public FutureItem Model => _future;
+
+        private void NotifyCalculatedProperties()
+        {
+            OnPropertyChanged(nameof(Exposure));
+            OnPropertyChanged(nameof(ProfitLoss));
+            OnPropertyChanged(nameof(ProfitLossPercentage));
+            OnPropertyChanged(nameof(ProfitLossColor));
+        }
     }
 }

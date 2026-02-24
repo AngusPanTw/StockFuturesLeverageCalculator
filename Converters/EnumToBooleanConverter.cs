@@ -17,9 +17,9 @@ namespace LeverageCalculator.Converters
             if (value == null || parameter == null)
                 return false;
 
-            string enumValue = value.ToString();
-            string targetValue = parameter.ToString();
-            return enumValue.Equals(targetValue, StringComparison.InvariantCultureIgnoreCase);
+            string? enumValue = value.ToString();
+            string? targetValue = parameter.ToString();
+            return enumValue?.Equals(targetValue, StringComparison.InvariantCultureIgnoreCase) ?? false;
         }
 
         /// <summary>
@@ -28,12 +28,13 @@ namespace LeverageCalculator.Converters
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || parameter == null)
-                return null;
+                return Binding.DoNothing;
 
             bool useValue = (bool)value;
-            if (useValue)
-                return Enum.Parse(targetType, parameter.ToString());
-            
+            string? paramString = parameter.ToString();
+            if (useValue && paramString != null)
+                return Enum.Parse(targetType, paramString);
+
             return Binding.DoNothing;
         }
     }

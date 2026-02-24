@@ -5,8 +5,6 @@ using System.Linq;
 using System.Windows.Input;
 using LeverageCalculator.Models;
 using LeverageCalculator.Services;
-using LeverageCalculator.Converters;
-
 namespace LeverageCalculator.ViewModels
 {
     /// <summary>
@@ -18,9 +16,16 @@ namespace LeverageCalculator.ViewModels
 
         // --- Collections ---
         /// <summary>
-        /// 股票庫存列表
+        /// 現股庫存列表
         /// </summary>
-        public ObservableCollection<StockItemViewModel> Stocks { get; set; }
+        public ObservableCollection<StockItemViewModel> CashStocks { get; set; }
+
+        /// <summary>
+        /// 融資庫存列表
+        /// </summary>
+        public ObservableCollection<StockItemViewModel> MarginStocks { get; set; }
+
+        private IEnumerable<StockItemViewModel> AllStocks => CashStocks.Concat(MarginStocks);
         
         /// <summary>
         /// 大台期貨庫存列表
@@ -32,7 +37,6 @@ namespace LeverageCalculator.ViewModels
         /// </summary>
         public ObservableCollection<FutureItemViewModel> SmallFutures { get; set; }
         
-        // Helper to aggregate futures for calculation
         private IEnumerable<FutureItemViewModel> AllFutures => LargeFutures.Concat(SmallFutures);
 
         // --- General Assets ---
@@ -65,16 +69,26 @@ namespace LeverageCalculator.ViewModels
         /// 新增股票股數
         /// </summary>
         public int NewStockShares { get => _newStockShares; set { _newStockShares = value; OnPropertyChanged(); } }
-        private decimal _newStockTotalCost;
+        private decimal _newStockEntryPrice;
         /// <summary>
-        /// 新增股票總成本
+        /// 新增股票進場均價
         /// </summary>
-        public decimal NewStockTotalCost { get => _newStockTotalCost; set { _newStockTotalCost = value; OnPropertyChanged(); } }
-        private decimal _newStockMarketValue;
+        public decimal NewStockEntryPrice { get => _newStockEntryPrice; set { _newStockEntryPrice = value; OnPropertyChanged(); } }
+        private decimal _newStockCurrentPrice;
         /// <summary>
-        /// 新增股票總市值
+        /// 新增股票現價
         /// </summary>
-        public decimal NewStockMarketValue { get => _newStockMarketValue; set { _newStockMarketValue = value; OnPropertyChanged(); } }
+        public decimal NewStockCurrentPrice { get => _newStockCurrentPrice; set { _newStockCurrentPrice = value; OnPropertyChanged(); } }
+        private StockType _newStockType = StockType.Cash;
+        /// <summary>
+        /// 新增股票類型（現股/融資）
+        /// </summary>
+        public StockType NewStockType { get => _newStockType; set { _newStockType = value; OnPropertyChanged(); } }
+        private decimal _newStockMarginRatio = 0.6m;
+        /// <summary>
+        /// 新增股票融資成數
+        /// </summary>
+        public decimal NewStockMarginRatio { get => _newStockMarginRatio; set { _newStockMarginRatio = value; OnPropertyChanged(); } }
 
         // --- Add New Future ---
         private string _newFutureName = "";
@@ -109,12 +123,41 @@ namespace LeverageCalculator.ViewModels
         public bool NewFutureIsSmallContract { get => _newFutureIsSmallContract; set { _newFutureIsSmallContract = value; OnPropertyChanged(); } }
 
         // --- Calculated Results ---
+        private decimal _cashStockValue;
+        /// <summary>
+        /// 現股總市值
+        /// </summary>
+        public decimal CashStockValue { get => _cashStockValue; private set { _cashStockValue = value; OnPropertyChanged(); } }
+
+        private decimal _marginStockValue;
+        /// <summary>
+        /// 融資股票總市值
+        /// </summary>
+        public decimal MarginStockValue { get => _marginStockValue; private set { _marginStockValue = value; OnPropertyChanged(); } }
+
         private decimal _totalStockValue;
         /// <summary>
         /// 股票總市值
         /// </summary>
         public decimal TotalStockValue { get => _totalStockValue; private set { _totalStockValue = value; OnPropertyChanged(); } }
         
+        private decimal _cashStockProfitLoss;
+        /// <summary>
+        /// 現股總損益
+        /// </summary>
+        public decimal CashStockProfitLoss { get => _cashStockProfitLoss; private set { _cashStockProfitLoss = value; OnPropertyChanged(); OnPropertyChanged(nameof(CashStockProfitLossColor)); } }
+
+        private double _cashStockProfitLossPercentage;
+        /// <summary>
+        /// 現股總報酬率
+        /// </summary>
+        public double CashStockProfitLossPercentage { get => _cashStockProfitLossPercentage; private set { _cashStockProfitLossPercentage = value; OnPropertyChanged(); } }
+
+        /// <summary>
+        /// 現股總損益顏色
+        /// </summary>
+        public string CashStockProfitLossColor => CashStockProfitLoss >= 0 ? "Red" : "Green";
+
         private decimal _totalStockProfitLoss;
         /// <summary>
         /// 股票總損益
@@ -148,6 +191,35 @@ namespace LeverageCalculator.ViewModels
         /// 期貨總損益顏色
         /// </summary>
         public string TotalFuturesProfitLossColor => TotalFuturesProfitLoss >= 0 ? "Red" : "Green";
+
+        private decimal _totalMarginLoan;
+        /// <summary>
+        /// 融資借款總額
+        /// </summary>
+        public decimal TotalMarginLoan { get => _totalMarginLoan; private set { _totalMarginLoan = value; OnPropertyChanged(); } }
+
+        private decimal _totalMarginSelfFunded;
+        /// <summary>
+        /// 融資自備金額合計
+        /// </summary>
+        public decimal TotalMarginSelfFunded { get => _totalMarginSelfFunded; private set { _totalMarginSelfFunded = value; OnPropertyChanged(); } }
+
+        private decimal _totalMarginProfitLoss;
+        /// <summary>
+        /// 融資未實現損益合計
+        /// </summary>
+        public decimal TotalMarginProfitLoss { get => _totalMarginProfitLoss; private set { _totalMarginProfitLoss = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalMarginProfitLossColor)); } }
+
+        private double _totalMarginProfitLossPercentage;
+        /// <summary>
+        /// 融資總報酬率
+        /// </summary>
+        public double TotalMarginProfitLossPercentage { get => _totalMarginProfitLossPercentage; private set { _totalMarginProfitLossPercentage = value; OnPropertyChanged(); } }
+
+        /// <summary>
+        /// 融資損益顏色
+        /// </summary>
+        public string TotalMarginProfitLossColor => TotalMarginProfitLoss >= 0 ? "Red" : "Green";
 
         private decimal _totalFuturesExposure;
         /// <summary>
@@ -197,8 +269,11 @@ namespace LeverageCalculator.ViewModels
         {
             _storageService = new PortfolioStorageService("portfolio.json");
 
-            Stocks = new ObservableCollection<StockItemViewModel>();
-            Stocks.CollectionChanged += OnCollectionChanged;
+            CashStocks = new ObservableCollection<StockItemViewModel>();
+            CashStocks.CollectionChanged += OnCollectionChanged;
+
+            MarginStocks = new ObservableCollection<StockItemViewModel>();
+            MarginStocks.CollectionChanged += OnCollectionChanged;
             
             LargeFutures = new ObservableCollection<FutureItemViewModel>();
             LargeFutures.CollectionChanged += OnCollectionChanged;
@@ -237,20 +312,33 @@ namespace LeverageCalculator.ViewModels
 
         private void RecalculateAll()
         {
-            TotalStockValue = Stocks.Sum(s => s.MarketValue);
-            decimal totalStockCost = Stocks.Sum(s => s.TotalCost);
+            // 現股
+            CashStockValue = CashStocks.Sum(s => s.MarketValue);
+            decimal cashStockCost = CashStocks.Sum(s => s.TotalCost);
+            CashStockProfitLoss = CashStockValue - cashStockCost;
+            CashStockProfitLossPercentage = cashStockCost != 0 ? (double)(CashStockProfitLoss / cashStockCost) : 0;
+
+            // 融資
+            MarginStockValue = MarginStocks.Sum(s => s.MarketValue);
+            TotalMarginLoan = MarginStocks.Sum(s => s.LoanAmount);
+            TotalMarginSelfFunded = MarginStocks.Sum(s => s.SelfFunded);
+            TotalMarginProfitLoss = MarginStocks.Sum(s => s.ProfitLoss);
+            TotalMarginProfitLossPercentage = TotalMarginSelfFunded != 0 ? (double)(TotalMarginProfitLoss / TotalMarginSelfFunded) : 0;
+
+            // 全部股票合計
+            TotalStockValue = CashStockValue + MarginStockValue;
+            decimal totalStockCost = cashStockCost + MarginStocks.Sum(s => s.TotalCost);
             TotalStockProfitLoss = TotalStockValue - totalStockCost;
             TotalStockProfitLossPercentage = totalStockCost != 0 ? (double)(TotalStockProfitLoss / totalStockCost) : 0;
 
-            TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
-            TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
             TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
             TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
             decimal totalFuturesCostValue = AllFutures.Sum(f => f.CostPrice * f.SharesPerLot * f.Lots);
             TotalFuturesProfitLossPercentage = totalFuturesCostValue != 0 ? (double)(TotalFuturesProfitLoss / totalFuturesCostValue) : 0;
 
             TotalExposure = TotalStockValue + TotalFuturesExposure;
-            TotalCapital = TotalStockValue + BankCash + StockSettlementAmount + FuturesEquity;
+            // 淨資產 = 現股市值 + (融資自備款 + 融資損益) + 可用資金 + 交割款 + 期貨權益金
+            TotalCapital = CashStockValue + (TotalMarginSelfFunded + TotalMarginProfitLoss) + BankCash + StockSettlementAmount + FuturesEquity;
 
             if (TotalCapital > 0)
             {
@@ -273,11 +361,21 @@ namespace LeverageCalculator.ViewModels
             {
                 Name = NewStockName,
                 Shares = NewStockShares,
-                TotalCost = NewStockTotalCost,
-                MarketValue = NewStockMarketValue
+                EntryPrice = NewStockEntryPrice,
+                CurrentPrice = NewStockCurrentPrice,
+                StockType = NewStockType,
+                MarginRatio = NewStockMarginRatio
             };
-            Stocks.Add(new StockItemViewModel(newStock));
-            
+            StockItemViewModel vm = new StockItemViewModel(newStock);
+            if (newStock.StockType == StockType.Margin)
+            {
+                MarginStocks.Add(vm);
+            }
+            else
+            {
+                CashStocks.Add(vm);
+            }
+
             ClearStockInputs();
         }
 
@@ -285,15 +383,23 @@ namespace LeverageCalculator.ViewModels
         {
             NewStockName = "";
             NewStockShares = 0;
-            NewStockTotalCost = 0;
-            NewStockMarketValue = 0;
+            NewStockEntryPrice = 0;
+            NewStockCurrentPrice = 0;
+            // 保留 NewStockType 和 NewStockMarginRatio 不重設
         }
 
         private void ExecuteDeleteStock(object? obj)
         {
             if (obj is StockItemViewModel stock)
             {
-                Stocks.Remove(stock);
+                if (CashStocks.Contains(stock))
+                {
+                    CashStocks.Remove(stock);
+                }
+                else if (MarginStocks.Contains(stock))
+                {
+                    MarginStocks.Remove(stock);
+                }
             }
         }
         
@@ -329,7 +435,7 @@ namespace LeverageCalculator.ViewModels
             NewFutureCostPrice = 0;
             NewFutureCurrentPrice = 0;
             NewFutureIsSmallContract = false;
-            // Keep Position as is or reset to default if desired, following original logic (implied keep or user pref)
+            // 保留 NewFuturePosition 不重設
         }
 
         private void ExecuteDeleteFuture(object? obj)
@@ -360,10 +466,19 @@ namespace LeverageCalculator.ViewModels
             StockSettlementAmount = portfolio.StockSettlementAmount;
             FuturesEquity = portfolio.FuturesEquity;
 
-            Stocks.Clear();
+            CashStocks.Clear();
+            MarginStocks.Clear();
             foreach (StockItem stock in portfolio.Stocks)
             {
-                Stocks.Add(new StockItemViewModel(stock));
+                StockItemViewModel vm = new StockItemViewModel(stock);
+                if (stock.StockType == StockType.Margin)
+                {
+                    MarginStocks.Add(vm);
+                }
+                else
+                {
+                    CashStocks.Add(vm);
+                }
             }
 
             LargeFutures.Clear();
@@ -391,7 +506,7 @@ namespace LeverageCalculator.ViewModels
                 BankCash = this.BankCash,
                 StockSettlementAmount = this.StockSettlementAmount,
                 FuturesEquity = this.FuturesEquity,
-                Stocks = this.Stocks.Select(vm => vm.Model).ToList(),
+                Stocks = this.AllStocks.Select(vm => vm.Model).ToList(),
                 Futures = this.AllFutures.Select(vm => vm.Model).ToList()
             };
             _storageService.SavePortfolio(portfolio);
