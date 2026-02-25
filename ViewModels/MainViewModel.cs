@@ -597,10 +597,19 @@ namespace LeverageCalculator.ViewModels
                 {
                     PriceUpdateStatus = $"正在查詢股票 {code}...";
                     cached = await _stockPriceService.GetClosingPriceAsync(code);
-                    stockPriceCache[code] = cached;
 
-                    // TWSE 頻率限制（3 次/5 秒），每次查詢後等待 2 秒
-                    await Task.Delay(2000);
+                    // 查詢失敗時重試（最多 2 次，遞增等待）
+                    int retryCount = 0;
+                    while (!cached.Success && retryCount < 2)
+                    {
+                        retryCount++;
+                        int delayMs = retryCount * 2000;
+                        PriceUpdateStatus = $"股票 {code} 查詢失敗，{delayMs / 1000} 秒後重試（第 {retryCount} 次）...";
+                        await Task.Delay(delayMs);
+                        cached = await _stockPriceService.GetClosingPriceAsync(code);
+                    }
+
+                    stockPriceCache[code] = cached;
                 }
                 if (cached.Success)
                 {
