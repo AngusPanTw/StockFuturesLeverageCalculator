@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using LeverageCalculator.Models;
@@ -9,6 +10,8 @@ namespace LeverageCalculator.Services
     /// </summary>
     public class PortfolioStorageService
     {
+        private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
+
         private readonly string _filePath;
 
         /// <summary>
@@ -36,9 +39,9 @@ namespace LeverageCalculator.Services
                 string json = File.ReadAllText(_filePath);
                 return JsonSerializer.Deserialize<Portfolio>(json);
             }
-            catch
+            catch (Exception ex)
             {
-                // Handle potential errors like corrupted file
+                Debug.WriteLine($"載入投資組合失敗: {ex.Message}");
                 return null;
             }
         }
@@ -51,13 +54,12 @@ namespace LeverageCalculator.Services
         {
             try
             {
-                JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(portfolio, options);
+                string json = JsonSerializer.Serialize(portfolio, WriteOptions);
                 File.WriteAllText(_filePath, json);
             }
-            catch
+            catch (Exception ex)
             {
-                // Handle potential saving errors
+                Debug.WriteLine($"儲存投資組合失敗: {ex.Message}");
             }
         }
     }

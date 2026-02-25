@@ -482,7 +482,6 @@
                             <Separator Margin="0,0,0,8"/>
                             <TextBlock Text="總曝險 = 股票總市值 + 期貨總市值" FontSize="15" Margin="0,0,0,5"/>
                             <TextBlock Text="淨資產 = 現股市值 + 融資自備款 + 融資損益 + 可用資金 + 交割款 + 期貨權益金" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,5"/>
-                            <TextBlock Text="總曝險市值 = 股票總市值 + 期貨總市值" FontSize="15" Margin="0,0,0,5"/>
                             <TextBlock Text="槓桿倍數 = 總曝險 / 淨資產" FontSize="15"/>
                         </StackPanel>
                     </Border>

@@ -1,11 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using LeverageCalculator.Models;
 using LeverageCalculator.Services;
+
 namespace LeverageCalculator.ViewModels
 {
     /// <summary>
@@ -317,7 +316,7 @@ namespace LeverageCalculator.ViewModels
             DeleteStockCommand = new RelayCommand(ExecuteDeleteStock);
             AddFutureCommand = new RelayCommand(ExecuteAddFuture);
             DeleteFutureCommand = new RelayCommand(ExecuteDeleteFuture);
-            FetchAllPricesCommand = new RelayCommand(async _ => await ExecuteFetchAllPricesAsync());
+            FetchAllPricesCommand = new RelayCommand(_ => ExecuteFetchAllPricesFireAndForget());
 
             LoadData();
         }
@@ -360,15 +359,18 @@ namespace LeverageCalculator.ViewModels
 
             // 全部股票合計
             TotalStockValue = CashStockValue + MarginStockValue;
-            decimal totalStockCost = cashStockCost + MarginStocks.Sum(s => s.TotalCost);
-            TotalStockProfitLoss = TotalStockValue - totalStockCost;
+            decimal marginStockCost = MarginStocks.Sum(s => s.TotalCost);
+            decimal totalStockCost = cashStockCost + marginStockCost;
+            TotalStockProfitLoss = CashStockProfitLoss + TotalMarginProfitLoss;
             TotalStockProfitLossPercentage = totalStockCost != 0 ? (double)(TotalStockProfitLoss / totalStockCost) : 0;
 
+            // 期貨
             TotalFuturesExposure = AllFutures.Sum(f => f.Exposure);
             TotalFuturesProfitLoss = AllFutures.Sum(f => f.ProfitLoss);
             decimal totalFuturesCostValue = AllFutures.Sum(f => f.CostPrice * f.SharesPerLot * f.Lots);
             TotalFuturesProfitLossPercentage = totalFuturesCostValue != 0 ? (double)(TotalFuturesProfitLoss / totalFuturesCostValue) : 0;
 
+            // 曝險與槓桿
             TotalExposure = TotalStockValue + TotalFuturesExposure;
             // 淨資產 = 現股市值 + (融資自備款 + 融資損益) + 可用資金 + 交割款 + 期貨權益金
             TotalCapital = CashStockValue + (TotalMarginSelfFunded + TotalMarginProfitLoss) + BankCash + StockSettlementAmount + FuturesEquity;
@@ -427,11 +429,7 @@ namespace LeverageCalculator.ViewModels
         {
             if (obj is StockItemViewModel stock)
             {
-                if (CashStocks.Contains(stock))
-                {
-                    CashStocks.Remove(stock);
-                }
-                else if (MarginStocks.Contains(stock))
+                if (!CashStocks.Remove(stock))
                 {
                     MarginStocks.Remove(stock);
                 }
@@ -479,11 +477,7 @@ namespace LeverageCalculator.ViewModels
         {
             if (obj is FutureItemViewModel future)
             {
-                if (LargeFutures.Contains(future))
-                {
-                    LargeFutures.Remove(future);
-                }
-                else if (SmallFutures.Contains(future))
+                if (!LargeFutures.Remove(future))
                 {
                     SmallFutures.Remove(future);
                 }
@@ -540,13 +534,29 @@ namespace LeverageCalculator.ViewModels
         {
             Portfolio portfolio = new Portfolio
             {
-                BankCash = this.BankCash,
-                StockSettlementAmount = this.StockSettlementAmount,
-                FuturesEquity = this.FuturesEquity,
-                Stocks = this.AllStocks.Select(vm => vm.Model).ToList(),
-                Futures = this.AllFutures.Select(vm => vm.Model).ToList()
+                BankCash = BankCash,
+                StockSettlementAmount = StockSettlementAmount,
+                FuturesEquity = FuturesEquity,
+                Stocks = AllStocks.Select(vm => vm.Model).ToList(),
+                Futures = AllFutures.Select(vm => vm.Model).ToList()
             };
             _storageService.SavePortfolio(portfolio);
+        }
+
+        /// <summary>
+        /// 非同步命令的進入點，捕捉未處理的例外避免應用程式崩潰
+        /// </summary>
+        private async void ExecuteFetchAllPricesFireAndForget()
+        {
+            try
+            {
+                await ExecuteFetchAllPricesAsync();
+            }
+            catch (Exception ex)
+            {
+                PriceUpdateStatus = $"更新收盤價時發生未預期的錯誤: {ex.Message}";
+                IsUpdatingPrices = false;
+            }
         }
 
         /// <summary>
