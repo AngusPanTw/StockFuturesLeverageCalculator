@@ -24,7 +24,7 @@ dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true 
 
 - **Models/** — 資料模型：`StockItem`、`FutureItem`、`Portfolio`、`StockType` 列舉（Cash/Margin）、`PositionType` 列舉（Long/Short）
 - **ViewModels/** — `MainViewModel` 統籌所有邏輯；`StockItemViewModel` 與 `FutureItemViewModel` 包裝 Model 並提供計算屬性與變更通知；`BaseViewModel` 提供 `INotifyPropertyChanged`；`RelayCommand` 實作 `ICommand`
-- **Services/** — `PortfolioStorageService` 負責 JSON 持久化至 `portfolio.json`
+- **Services/** — `PortfolioStorageService` 負責 JSON 持久化至 `portfolio.json`；`StockPriceService` 查詢 TWSE/TPEX 股票收盤價；`FuturesPriceService` 查詢 TAIFEX 期貨收盤價
 - **Converters/** — `EnumToBooleanConverter` 用於 RadioButton 的資料繫結（支援 `StockType` 和 `PositionType`）
 - **View** — `MainWindow.xaml` 為唯一視窗，三欄式佈局（股票 | 期貨 | 結算報告）
 
@@ -58,6 +58,30 @@ dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true 
 ```
 
 **風險等級：** 穩定（≤1.0 倍）、適中（1.0–2.0 倍）、高風險（>2.0 倍）
+
+## 收盤價查詢服務
+
+### StockCode 欄位
+
+`StockItem.StockCode` 和 `FutureItem.StockCode` 用於自動查價時比對 API 資料：
+- **股票**：台股代號，如 `"2330"`、`"2317"`。先查 TWSE（上市），無資料再查 TPEX（上櫃）。
+- **期貨**：`Contract` + `ContractMonth(Week)` 組合，如 `"DIF202603"`。也支援短格式 `"DIF2603"`（`NormalizeFuturesCode` 會補為 6 碼）。
+- 欄位為空時，查價邏輯會自動跳過該筆。舊版 `portfolio.json` 不含此欄位，反序列化自動為 `""`，向後相容。
+
+### API 資料來源
+
+| 服務 | API 端點 | 說明 |
+|------|----------|------|
+| `StockPriceService` | TWSE `exchangeReport/STOCK_DAY` | 上市股票每日收盤價（`data` 陣列最後一筆 index 6） |
+| `StockPriceService` | TPEX `afterTrading/tradingStock` | 上櫃股票每日收盤價（`tables[0].data` 最後一筆 index 6） |
+| `FuturesPriceService` | TAIFEX `DailyMarketReportFut` | 一次回傳所有期貨行情，取 `Last` 欄位。過濾 `TradingSession="一般"` 且排除 `ContractMonth(Week)` 含 `/` 的轉倉資料 |
+
+### 查詢流程（MainViewModel.ExecuteFetchAllPricesAsync）
+
+1. 逐檔查詢股票（TWSE → TPEX fallback），每次查詢後延遲 2 秒（TWSE 頻率限制）
+2. 同代號股票使用快取避免重複查詢
+3. 一次呼叫 TAIFEX API 取得全部期貨行情，建立 `Dictionary<string, FuturesPriceResult>` 後批次比對
+4. 更新 `CurrentPrice` 後自動觸發 `RecalculateAll()`
 
 ## 核心資料流
 

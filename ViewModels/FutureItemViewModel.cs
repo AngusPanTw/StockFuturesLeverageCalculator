@@ -15,6 +15,15 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
+        /// 期貨代碼（Contract + ContractMonth，如 "DIF202603"）
+        /// </summary>
+        public string StockCode
+        {
+            get => _future.StockCode;
+            set { _future.StockCode = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
         /// 標的名稱
         /// </summary>
         public string Name

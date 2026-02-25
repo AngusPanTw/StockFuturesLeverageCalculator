@@ -6,6 +6,10 @@ namespace LeverageCalculator.Models
     public class FutureItem
     {
         /// <summary>
+        /// 期貨代碼（Contract + ContractMonth，如 "DIF202603"）
+        /// </summary>
+        public string StockCode { get; set; } = string.Empty;
+        /// <summary>
         /// 標的名稱
         /// </summary>
         public string Name { get; set; } = string.Empty;

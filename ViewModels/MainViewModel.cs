@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using LeverageCalculator.Models;
 using LeverageCalculator.Services;
@@ -13,6 +14,8 @@ namespace LeverageCalculator.ViewModels
     public class MainViewModel : BaseViewModel
     {
         private readonly PortfolioStorageService _storageService;
+        private readonly StockPriceService _stockPriceService;
+        private readonly FuturesPriceService _futuresPriceService;
 
         // --- Collections ---
         /// <summary>
@@ -59,6 +62,11 @@ namespace LeverageCalculator.ViewModels
         public decimal FuturesEquity { get => _futuresEquity; set { _futuresEquity = value; OnPropertyChanged(); RecalculateAll(); } }
 
         // --- Add New Stock ---
+        private string _newStockCode = "";
+        /// <summary>
+        /// 新增股票代號
+        /// </summary>
+        public string NewStockCode { get => _newStockCode; set { _newStockCode = value; OnPropertyChanged(); } }
         private string _newStockName = "";
         /// <summary>
         /// 新增股票名稱
@@ -91,6 +99,11 @@ namespace LeverageCalculator.ViewModels
         public decimal NewStockMarginRatio { get => _newStockMarginRatio; set { _newStockMarginRatio = value; OnPropertyChanged(); } }
 
         // --- Add New Future ---
+        private string _newFutureStockCode = "";
+        /// <summary>
+        /// 新增期貨標的代號
+        /// </summary>
+        public string NewFutureStockCode { get => _newFutureStockCode; set { _newFutureStockCode = value; OnPropertyChanged(); } }
         private string _newFutureName = "";
         /// <summary>
         /// 新增期貨名稱
@@ -247,6 +260,19 @@ namespace LeverageCalculator.ViewModels
         /// </summary>
         public string RiskStatus { get => _riskStatus; private set { _riskStatus = value; OnPropertyChanged(); } }
         
+        // --- Price Update ---
+        private string _priceUpdateStatus = "";
+        /// <summary>
+        /// 收盤價更新狀態提示
+        /// </summary>
+        public string PriceUpdateStatus { get => _priceUpdateStatus; set { _priceUpdateStatus = value; OnPropertyChanged(); } }
+
+        private bool _isUpdatingPrices;
+        /// <summary>
+        /// 是否正在更新收盤價
+        /// </summary>
+        public bool IsUpdatingPrices { get => _isUpdatingPrices; set { _isUpdatingPrices = value; OnPropertyChanged(); } }
+
         // --- Commands ---
         /// <summary>
         /// 新增股票命令
@@ -264,20 +290,26 @@ namespace LeverageCalculator.ViewModels
         /// 刪除期貨命令
         /// </summary>
         public ICommand DeleteFutureCommand { get; }
+        /// <summary>
+        /// 一鍵更新所有庫存收盤價
+        /// </summary>
+        public ICommand FetchAllPricesCommand { get; }
 
         public MainViewModel()
         {
             _storageService = new PortfolioStorageService("portfolio.json");
+            _stockPriceService = new StockPriceService();
+            _futuresPriceService = new FuturesPriceService();
 
             CashStocks = new ObservableCollection<StockItemViewModel>();
             CashStocks.CollectionChanged += OnCollectionChanged;
 
             MarginStocks = new ObservableCollection<StockItemViewModel>();
             MarginStocks.CollectionChanged += OnCollectionChanged;
-            
+
             LargeFutures = new ObservableCollection<FutureItemViewModel>();
             LargeFutures.CollectionChanged += OnCollectionChanged;
-            
+
             SmallFutures = new ObservableCollection<FutureItemViewModel>();
             SmallFutures.CollectionChanged += OnCollectionChanged;
 
@@ -285,7 +317,8 @@ namespace LeverageCalculator.ViewModels
             DeleteStockCommand = new RelayCommand(ExecuteDeleteStock);
             AddFutureCommand = new RelayCommand(ExecuteAddFuture);
             DeleteFutureCommand = new RelayCommand(ExecuteDeleteFuture);
-            
+            FetchAllPricesCommand = new RelayCommand(async _ => await ExecuteFetchAllPricesAsync());
+
             LoadData();
         }
         
@@ -359,6 +392,7 @@ namespace LeverageCalculator.ViewModels
         {
             StockItem newStock = new StockItem
             {
+                StockCode = NewStockCode,
                 Name = NewStockName,
                 Shares = NewStockShares,
                 EntryPrice = NewStockEntryPrice,
@@ -381,6 +415,7 @@ namespace LeverageCalculator.ViewModels
 
         private void ClearStockInputs()
         {
+            NewStockCode = "";
             NewStockName = "";
             NewStockShares = 0;
             NewStockEntryPrice = 0;
@@ -407,6 +442,7 @@ namespace LeverageCalculator.ViewModels
         {
             FutureItem newFuture = new FutureItem
             {
+                StockCode = NewFutureStockCode,
                 Name = NewFutureName,
                 Lots = NewFutureLots,
                 Position = NewFuturePosition,
@@ -430,6 +466,7 @@ namespace LeverageCalculator.ViewModels
 
         private void ClearFutureInputs()
         {
+            NewFutureStockCode = "";
             NewFutureName = "";
             NewFutureLots = 0;
             NewFutureCostPrice = 0;
@@ -510,6 +547,207 @@ namespace LeverageCalculator.ViewModels
                 Futures = this.AllFutures.Select(vm => vm.Model).ToList()
             };
             _storageService.SavePortfolio(portfolio);
+        }
+
+        /// <summary>
+        /// 一鍵更新所有庫存的收盤價（股票 + 股票期貨）
+        /// </summary>
+        private async Task ExecuteFetchAllPricesAsync()
+        {
+            if (IsUpdatingPrices)
+            {
+                return;
+            }
+
+            IsUpdatingPrices = true;
+            PriceUpdateStatus = "正在更新收盤價...";
+
+            int stockSuccessCount = 0;
+            int stockFailCount = 0;
+            int futuresSuccessCount = 0;
+            int futuresFailCount = 0;
+            string twseDate = "";
+            string tpexDate = "";
+            string futuresDate = "";
+
+            List<string> errors = new List<string>();
+
+            // === 更新股票（逐檔查詢 TWSE/TPEX）===
+            Dictionary<string, StockPriceResult> stockPriceCache = new Dictionary<string, StockPriceResult>();
+
+            foreach (StockItemViewModel stock in AllStocks)
+            {
+                string code = stock.StockCode?.Trim() ?? "";
+                if (string.IsNullOrEmpty(code))
+                {
+                    continue;
+                }
+
+                if (!stockPriceCache.TryGetValue(code, out StockPriceResult? cached))
+                {
+                    PriceUpdateStatus = $"正在查詢股票 {code}...";
+                    cached = await _stockPriceService.GetClosingPriceAsync(code);
+                    stockPriceCache[code] = cached;
+
+                    // TWSE 頻率限制（3 次/5 秒），每次查詢後等待 2 秒
+                    await Task.Delay(2000);
+                }
+                if (cached.Success)
+                {
+                    stock.CurrentPrice = cached.ClosingPrice;
+                    stockSuccessCount++;
+
+                    if (cached.Source == "TWSE" && string.IsNullOrEmpty(twseDate) && !string.IsNullOrEmpty(cached.Date))
+                    {
+                        twseDate = cached.Date;
+                    }
+                    else if (cached.Source == "TPEX" && string.IsNullOrEmpty(tpexDate) && !string.IsNullOrEmpty(cached.Date))
+                    {
+                        tpexDate = cached.Date;
+                    }
+                }
+                else
+                {
+                    stockFailCount++;
+                    errors.Add($"{code}: {cached.ErrorMessage}");
+                }
+            }
+
+            // === 更新期貨（一次呼叫 TAIFEX API，批次比對）===
+            PriceUpdateStatus = "正在查詢期貨行情...";
+            FuturesBatchResult futuresBatch = await _futuresPriceService.GetAllFuturesPricesAsync();
+
+            if (futuresBatch.Success)
+            {
+                foreach (FutureItemViewModel future in AllFutures)
+                {
+                    string code = NormalizeFuturesCode(future.StockCode?.Trim() ?? "");
+                    if (string.IsNullOrEmpty(code))
+                    {
+                        continue;
+                    }
+
+                    if (futuresBatch.Prices.TryGetValue(code, out FuturesPriceResult? priceResult))
+                    {
+                        future.CurrentPrice = priceResult.ClosingPrice;
+                        futuresSuccessCount++;
+
+                        if (string.IsNullOrEmpty(futuresDate) && !string.IsNullOrEmpty(priceResult.Date))
+                        {
+                            futuresDate = priceResult.Date;
+                        }
+                    }
+                    else
+                    {
+                        futuresFailCount++;
+                        errors.Add($"[{code}]: 查無期貨行情");
+                    }
+                }
+            }
+            else
+            {
+                // API 呼叫本身失敗，所有期貨都算失敗
+                int futuresTotal = AllFutures.Count(f => !string.IsNullOrEmpty(f.StockCode?.Trim()));
+                futuresFailCount = futuresTotal;
+                errors.Add(futuresBatch.ErrorMessage);
+            }
+
+            // === 組合狀態訊息 ===
+            string status = $"更新股票 {stockSuccessCount} 筆, 更新股期 {futuresSuccessCount} 筆";
+
+            if (stockFailCount > 0 || futuresFailCount > 0)
+            {
+                List<string> failParts = new List<string>();
+                if (stockFailCount > 0)
+                {
+                    failParts.Add($"股票{stockFailCount}筆");
+                }
+                if (futuresFailCount > 0)
+                {
+                    failParts.Add($"股期{futuresFailCount}筆");
+                }
+                status += $" ({string.Join(", ", failParts)}失敗)";
+            }
+
+            // 日期：分開顯示上市(TWSE)、上櫃(OTC)、股期(TAIFEX)
+            List<string> dateParts = new List<string>();
+            if (!string.IsNullOrEmpty(twseDate))
+            {
+                dateParts.Add($"上市:{twseDate}");
+            }
+            if (!string.IsNullOrEmpty(tpexDate))
+            {
+                dateParts.Add($"上櫃(OTC):{tpexDate}");
+            }
+            string futuresDateDisplay = FormatTaifexDate(futuresDate);
+            if (!string.IsNullOrEmpty(futuresDateDisplay))
+            {
+                dateParts.Add($"股期:{futuresDateDisplay}");
+            }
+            if (dateParts.Count > 0)
+            {
+                status += $"\n資料日期 — {string.Join(" / ", dateParts)}";
+            }
+
+            if (errors.Count > 0)
+            {
+                status += $" [{string.Join("; ", errors)}]";
+            }
+
+            PriceUpdateStatus = status;
+            IsUpdatingPrices = false;
+        }
+
+        /// <summary>
+        /// 將使用者輸入的期貨代碼正規化為 API 格式。
+        /// 支援短格式 "KUF2603" → "KUF202603"，也接受完整格式 "KUF202603"。
+        /// </summary>
+        private static string NormalizeFuturesCode(string code)
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                return "";
+            }
+
+            // 找出第一個數字的位置（Contract 部分為英文，剩下的是月份）
+            int digitStart = -1;
+            for (int i = 0; i < code.Length; i++)
+            {
+                if (char.IsDigit(code[i]))
+                {
+                    digitStart = i;
+                    break;
+                }
+            }
+
+            // 沒有數字或全是數字（無 Contract 前綴），直接回傳原始值
+            if (digitStart <= 0)
+            {
+                return code;
+            }
+
+            string contract = code[..digitStart];
+            string month = code[digitStart..];
+
+            // 短格式 4 碼 "2603" → 補成 "202603"
+            if (month.Length == 4)
+            {
+                month = "20" + month;
+            }
+
+            return contract + month;
+        }
+
+        /// <summary>
+        /// 將 TAIFEX 日期格式 "20260224" 轉為 "2026/02/24"
+        /// </summary>
+        private static string FormatTaifexDate(string rawDate)
+        {
+            if (string.IsNullOrEmpty(rawDate) || rawDate.Length != 8)
+            {
+                return "";
+            }
+            return $"{rawDate[..4]}/{rawDate[4..6]}/{rawDate[6..8]}";
         }
     }
 }

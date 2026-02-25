@@ -6,6 +6,10 @@ namespace LeverageCalculator.Models
     public class StockItem
     {
         /// <summary>
+        /// 股票代號（如 "2330"）
+        /// </summary>
+        public string StockCode { get; set; } = string.Empty;
+        /// <summary>
         /// 股票名稱
         /// </summary>
         public string Name { get; set; } = string.Empty;

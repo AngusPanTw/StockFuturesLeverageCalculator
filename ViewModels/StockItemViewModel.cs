@@ -15,6 +15,15 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
+        /// 股票代號
+        /// </summary>
+        public string StockCode
+        {
+            get => _stock.StockCode;
+            set { _stock.StockCode = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
         /// 股票名稱
         /// </summary>
         public string Name

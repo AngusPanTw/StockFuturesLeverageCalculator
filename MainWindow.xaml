@@ -128,28 +128,46 @@
                 </Grid>
             </GroupBox>
 
+            <!-- 更新收盤價按鈕 -->
+            <StackPanel DockPanel.Dock="Top" Margin="5,5,5,0">
+                <Button Content="更新所有收盤價" Command="{Binding FetchAllPricesCommand}" Height="32" FontSize="13">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsUpdatingPrices}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <TextBlock Text="{Binding PriceUpdateStatus}" Margin="5,5,5,0" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="Black"/>
+            </StackPanel>
+
             <GroupBox Header="股票庫存" Margin="0,10,0,0" Padding="5">
                 <DockPanel>
                     <GroupBox DockPanel.Dock="Bottom" Header="新增股票" Padding="5">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                                <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                             </Grid.RowDefinitions>
-                            <TextBlock Text="股票名稱:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Column="1" Text="{Binding NewStockName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                            <TextBlock Grid.Row="1" Text="持有類型:" VerticalAlignment="Center" Margin="2"/>
-                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="股票代號:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Column="1" Text="{Binding NewStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                            <TextBlock Grid.Row="1" Text="股票名稱:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewStockName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                            <TextBlock Grid.Row="2" Text="持有類型:" VerticalAlignment="Center" Margin="2"/>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <RadioButton Content="現股" IsChecked="{Binding NewStockType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:StockType.Cash}}" Margin="5,0"/>
                                 <RadioButton Content="融資" IsChecked="{Binding NewStockType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:StockType.Margin}}" Margin="5,0"/>
                             </StackPanel>
-                            <TextBlock Grid.Row="2" Text="持有股數:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewStockShares}" Margin="2"/>
-                            <TextBlock Grid.Row="3" Text="進場均價:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewStockEntryPrice}" Margin="2"/>
-                            <TextBlock Grid.Row="4" Text="現價:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NewStockCurrentPrice}" Margin="2"/>
-                            <TextBlock Grid.Row="5" Text="融資成數:" VerticalAlignment="Center" Margin="2">
+                            <TextBlock Grid.Row="3" Text="持有股數:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewStockShares}" Margin="2"/>
+                            <TextBlock Grid.Row="4" Text="進場均價:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NewStockEntryPrice}" Margin="2"/>
+                            <TextBlock Grid.Row="5" Text="現價:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding NewStockCurrentPrice}" Margin="2"/>
+                            <TextBlock Grid.Row="6" Text="融資成數:" VerticalAlignment="Center" Margin="2">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                                         <Style.Triggers>
@@ -160,7 +178,7 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding NewStockMarginRatio}" Margin="2">
+                            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding NewStockMarginRatio}" Margin="2">
                                 <TextBox.Style>
                                     <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                                         <Style.Triggers>
@@ -171,7 +189,7 @@
                                     </Style>
                                 </TextBox.Style>
                             </TextBox>
-                            <Button Grid.Row="6" Grid.Column="1" Content="新增股票" Command="{Binding AddStockCommand}" Margin="5"/>
+                            <Button Grid.Row="7" Grid.Column="1" Content="新增股票" Command="{Binding AddStockCommand}" Margin="5"/>
                         </Grid>
                     </GroupBox>
 
@@ -194,6 +212,7 @@
                             </Border>
                             <DataGrid ItemsSource="{Binding CashStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
                                 <DataGrid.Columns>
+                                    <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="進場均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
@@ -238,6 +257,7 @@
                             </Border>
                             <DataGrid ItemsSource="{Binding MarginStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
                                 <DataGrid.Columns>
+                                    <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="進場均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
@@ -291,24 +311,26 @@
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="標的名稱:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Column="1" Text="{Binding NewFutureName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                        <TextBlock Grid.Row="1" Text="持倉口數:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewFutureLots}" Margin="2"/>
-                        <TextBlock Grid.Row="2" Text="多空方向:" VerticalAlignment="Center" Margin="2"/>
-                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="股票代號:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Column="1" Text="{Binding NewFutureStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                        <TextBlock Grid.Row="1" Text="標的名稱:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewFutureName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                        <TextBlock Grid.Row="2" Text="持倉口數:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewFutureLots}" Margin="2"/>
+                        <TextBlock Grid.Row="3" Text="多空方向:" VerticalAlignment="Center" Margin="2"/>
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <RadioButton Content="多單" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Long}}" Margin="5,0"/>
                             <RadioButton Content="空單" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Short}}" Margin="5,0"/>
                         </StackPanel>
-                        <TextBlock Grid.Row="3" Text="成本價格:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewFutureCostPrice}" Margin="2"/>
-                        <TextBlock Grid.Row="4" Text="目前市價:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NewFutureCurrentPrice}" Margin="2"/>
-                        <TextBlock Grid.Row="5" Text="合約類型:" VerticalAlignment="Center" Margin="2"/>
-                        <CheckBox Grid.Row="5" Grid.Column="1" Content="小型合約 (100股/口)" IsChecked="{Binding NewFutureIsSmallContract}" VerticalAlignment="Center" Margin="5,0"/>
-                        <Button Grid.Row="6" Grid.Column="1" Content="新增股票期貨" Command="{Binding AddFutureCommand}" Margin="5"/>
+                        <TextBlock Grid.Row="4" Text="成本價格:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NewFutureCostPrice}" Margin="2"/>
+                        <TextBlock Grid.Row="5" Text="目前市價:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding NewFutureCurrentPrice}" Margin="2"/>
+                        <TextBlock Grid.Row="6" Text="合約類型:" VerticalAlignment="Center" Margin="2"/>
+                        <CheckBox Grid.Row="6" Grid.Column="1" Content="小型合約 (100股/口)" IsChecked="{Binding NewFutureIsSmallContract}" VerticalAlignment="Center" Margin="5,0"/>
+                        <Button Grid.Row="7" Grid.Column="1" Content="新增股票期貨" Command="{Binding AddFutureCommand}" Margin="5"/>
                     </Grid>
                 </GroupBox>
 
@@ -321,6 +343,7 @@
                     <GroupBox Header="大型合約 (2000股)" Margin="0,0,0,5">
                         <DataGrid ItemsSource="{Binding LargeFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
                             <DataGrid.Columns>
+                                <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
@@ -355,6 +378,7 @@
                     <GroupBox Grid.Row="1" Header="小型合約 (100股)" Margin="0,5,0,0">
                         <DataGrid ItemsSource="{Binding SmallFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
                             <DataGrid.Columns>
+                                <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
