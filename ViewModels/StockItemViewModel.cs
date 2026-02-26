@@ -119,11 +119,6 @@ namespace LeverageCalculator.ViewModels
         public decimal MarketValue => CurrentPrice * Shares;
 
         /// <summary>
-        /// 融資金額（現股為 0；融資 = 總成本 x 融資成數）
-        /// </summary>
-        public decimal LoanAmount => StockType == StockType.Margin ? TotalCost * MarginRatio : 0;
-
-        /// <summary>
         /// 自備款（現股 = 總成本；融資 = 總成本 x (1 - 融資成數)）
         /// </summary>
         public decimal SelfFunded => StockType == StockType.Margin ? TotalCost * (1 - MarginRatio) : TotalCost;
@@ -159,7 +154,6 @@ namespace LeverageCalculator.ViewModels
         {
             OnPropertyChanged(nameof(TotalCost));
             OnPropertyChanged(nameof(MarketValue));
-            OnPropertyChanged(nameof(LoanAmount));
             OnPropertyChanged(nameof(SelfFunded));
             OnPropertyChanged(nameof(ProfitLoss));
             OnPropertyChanged(nameof(ProfitLossPercentage));

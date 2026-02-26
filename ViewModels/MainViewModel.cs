@@ -30,12 +30,12 @@ namespace LeverageCalculator.ViewModels
         private IEnumerable<StockItemViewModel> AllStocks => CashStocks.Concat(MarginStocks);
         
         /// <summary>
-        /// 大台期貨庫存列表
+        /// 大型合約期貨庫存列表
         /// </summary>
         public ObservableCollection<FutureItemViewModel> LargeFutures { get; set; }
         
         /// <summary>
-        /// 小台期貨庫存列表
+        /// 小型合約期貨庫存列表
         /// </summary>
         public ObservableCollection<FutureItemViewModel> SmallFutures { get; set; }
         
@@ -204,12 +204,6 @@ namespace LeverageCalculator.ViewModels
         /// </summary>
         public string TotalFuturesProfitLossColor => TotalFuturesProfitLoss >= 0 ? "Red" : "Green";
 
-        private decimal _totalMarginLoan;
-        /// <summary>
-        /// 融資借款總額
-        /// </summary>
-        public decimal TotalMarginLoan { get => _totalMarginLoan; private set { _totalMarginLoan = value; OnPropertyChanged(); } }
-
         private decimal _totalMarginSelfFunded;
         /// <summary>
         /// 融資自備金額合計
@@ -253,11 +247,6 @@ namespace LeverageCalculator.ViewModels
         /// 槓桿倍數
         /// </summary>
         public double Leverage { get => _leverage; private set { _leverage = value; OnPropertyChanged(); } }
-        private string _riskStatus = "";
-        /// <summary>
-        /// 風險狀態描述
-        /// </summary>
-        public string RiskStatus { get => _riskStatus; private set { _riskStatus = value; OnPropertyChanged(); } }
         
         // --- Price Update ---
         private string _priceUpdateStatus = "";
@@ -352,7 +341,6 @@ namespace LeverageCalculator.ViewModels
 
             // 融資
             MarginStockValue = MarginStocks.Sum(s => s.MarketValue);
-            TotalMarginLoan = MarginStocks.Sum(s => s.LoanAmount);
             TotalMarginSelfFunded = MarginStocks.Sum(s => s.SelfFunded);
             TotalMarginProfitLoss = MarginStocks.Sum(s => s.ProfitLoss);
             TotalMarginProfitLossPercentage = TotalMarginSelfFunded != 0 ? (double)(TotalMarginProfitLoss / TotalMarginSelfFunded) : 0;
@@ -375,19 +363,7 @@ namespace LeverageCalculator.ViewModels
             // 淨資產 = 現股市值 + (融資自備款 + 融資損益) + 可用資金 + 交割款 + 期貨權益金
             TotalCapital = CashStockValue + (TotalMarginSelfFunded + TotalMarginProfitLoss) + BankCash + StockSettlementAmount + FuturesEquity;
 
-            if (TotalCapital > 0)
-            {
-                Leverage = (double)(TotalExposure / TotalCapital);
-
-                if (Leverage <= 1.0) RiskStatus = "穩定";
-                else if (Leverage <= 2.0) RiskStatus = "適中";
-                else RiskStatus = "高風險";
-            }
-            else
-            {
-                Leverage = 0;
-                RiskStatus = "危險 (資產 <= 0)";
-            }
+            Leverage = TotalCapital > 0 ? (double)(TotalExposure / TotalCapital) : 0;
         }
 
         private void ExecuteAddStock(object? obj)

@@ -104,7 +104,7 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
-        /// 每口合約股數 (小台100, 大台2000)
+        /// 每口合約股數 (小型合約100, 大型合約2000)
         /// </summary>
         public int SharesPerLot => IsSmallContract ? 100 : 2000;
 

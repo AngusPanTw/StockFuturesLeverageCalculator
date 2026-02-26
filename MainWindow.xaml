@@ -88,48 +88,74 @@
             </Setter>
         </Style>
 
-        <Style x:Key="RightAlignedCellStyle" TargetType="TextBlock">
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="5,0"/>
-        </Style>
-
         <Style x:Key="CenterAlignedCellStyle" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
+
+        <Style x:Key="DeleteButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#FFFFE8E8" BorderBrush="#FFEE6666" BorderThickness="1" CornerRadius="10" Width="20" Height="20">
+                            <TextBlock Text="X" FontSize="10" FontWeight="Bold" Foreground="#FFCC3333" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="icon"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFF4444"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FFCC0000"/>
+                                <Setter TargetName="icon" Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFCC0000"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF990000"/>
+                                <Setter TargetName="icon" Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" MinWidth="400"/>
             <ColumnDefinition Width="2*" MinWidth="400"/>
             <ColumnDefinition Width="1*" MinWidth="300"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Column 0: General Assets & Stocks -->
-        <DockPanel Grid.Column="0" Margin="0,0,10,0">
-            <GroupBox Header="總資產" DockPanel.Dock="Top" Padding="5">
+        <!-- Row 0, Col 0: 總資產 + 更新收盤價 -->
+        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
+            <GroupBox Header="總資產" Padding="3">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="銀行可用現金:" VerticalAlignment="Center" Margin="5"/>
-                    <TextBox Grid.Column="1" Text="{Binding BankCash, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="5" HorizontalAlignment="Stretch"/>
-                    <TextBlock Grid.Row="1" Text="股票交割款(近三日):" VerticalAlignment="Center" Margin="5"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StockSettlementAmount, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="5" HorizontalAlignment="Stretch"/>
-                    <TextBlock Grid.Row="2" Text="期貨帳戶權益金:" VerticalAlignment="Center" Margin="5"/>
-                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding FuturesEquity, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="5" HorizontalAlignment="Stretch"/>
+                    <TextBlock Text="可用現金:" VerticalAlignment="Center" Margin="3,2"/>
+                    <TextBox Grid.Column="1" Text="{Binding BankCash, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="3,2"/>
+                    <TextBlock Grid.Column="2" Text="交割款:" VerticalAlignment="Center" Margin="3,2"/>
+                    <TextBox Grid.Column="3" Text="{Binding StockSettlementAmount, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="3,2"/>
+                    <TextBlock Grid.Column="4" Text="權益金:" VerticalAlignment="Center" Margin="3,2"/>
+                    <TextBox Grid.Column="5" Text="{Binding FuturesEquity, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="3,2"/>
                 </Grid>
             </GroupBox>
-
-            <!-- 更新收盤價按鈕 -->
-            <StackPanel DockPanel.Dock="Top" Margin="5,5,5,0">
+            <StackPanel Margin="5,5,5,0">
                 <Button Content="更新所有收盤價" Command="{Binding FetchAllPricesCommand}" Height="32" FontSize="13">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -143,31 +169,54 @@
                 </Button>
                 <TextBlock Text="{Binding PriceUpdateStatus}" Margin="5,5,5,0" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="Black"/>
             </StackPanel>
+        </StackPanel>
 
-            <GroupBox Header="股票庫存" Margin="0,10,0,0" Padding="5">
+        <!-- Row 0, Col 1: 公式說明 -->
+        <GroupBox Grid.Row="0" Grid.Column="1" Header="公式說明" Padding="10" Margin="10,0,0,0" Background="Transparent">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="總曝險 = 股票總市值 + 期貨總市值" FontSize="14" FontWeight="SemiBold" Margin="0,4"/>
+                <TextBlock Text="淨資產 = 現股市值 + 融資自備款 + 融資損益 + 可用資金 + 交割款 + 期貨權益金" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4"/>
+                <TextBlock Text="槓桿倍數 = 總曝險 / 淨資產" FontSize="14" FontWeight="SemiBold" Margin="0,4"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Row 1, Col 0: 股票庫存 -->
+        <GroupBox Grid.Row="1" Grid.Column="0" Header="股票庫存" Margin="0,5,10,0" Padding="5">
                 <DockPanel>
-                    <GroupBox DockPanel.Dock="Bottom" Header="新增股票" Padding="5">
+                    <GroupBox DockPanel.Dock="Bottom" Header="新增股票" Padding="3">
                         <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
-                                <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Text="股票代號:" VerticalAlignment="Center" Margin="2"/>
+                            <!-- Row 0: 代號 + 名稱 -->
+                            <TextBlock Text="代號:" VerticalAlignment="Center" Margin="2"/>
                             <TextBox Grid.Column="1" Text="{Binding NewStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                            <TextBlock Grid.Row="1" Text="股票名稱:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewStockName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                            <TextBlock Grid.Row="2" Text="持有類型:" VerticalAlignment="Center" Margin="2"/>
-                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="2" Text="名稱:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Column="3" Text="{Binding NewStockName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                            <!-- Row 1: 類型 + 股數 -->
+                            <TextBlock Grid.Row="1" Text="類型:" VerticalAlignment="Center" Margin="2"/>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <RadioButton Content="現股" IsChecked="{Binding NewStockType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:StockType.Cash}}" Margin="5,0"/>
                                 <RadioButton Content="融資" IsChecked="{Binding NewStockType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:StockType.Margin}}" Margin="5,0"/>
                             </StackPanel>
-                            <TextBlock Grid.Row="3" Text="持有股數:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewStockShares}" Margin="2"/>
-                            <TextBlock Grid.Row="4" Text="進場均價:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NewStockEntryPrice}" Margin="2"/>
-                            <TextBlock Grid.Row="5" Text="現價:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding NewStockCurrentPrice}" Margin="2"/>
-                            <TextBlock Grid.Row="6" Text="融資成數:" VerticalAlignment="Center" Margin="2">
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="股數:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding NewStockShares}" Margin="2"/>
+                            <!-- Row 2: 進場均價 + 現價 -->
+                            <TextBlock Grid.Row="2" Text="均價:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewStockEntryPrice}" Margin="2"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="現價:" VerticalAlignment="Center" Margin="2"/>
+                            <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding NewStockCurrentPrice}" Margin="2"/>
+                            <!-- Row 3: 融資成數 + 新增按鈕 -->
+                            <TextBlock Grid.Row="3" Text="融資成數:" VerticalAlignment="Center" Margin="2">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                                         <Style.Triggers>
@@ -178,7 +227,7 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding NewStockMarginRatio}" Margin="2">
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewStockMarginRatio}" Margin="2">
                                 <TextBox.Style>
                                     <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                                         <Style.Triggers>
@@ -189,7 +238,7 @@
                                     </Style>
                                 </TextBox.Style>
                             </TextBox>
-                            <Button Grid.Row="7" Grid.Column="1" Content="新增股票" Command="{Binding AddStockCommand}" Margin="5"/>
+                            <Button Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="新增股票" Command="{Binding AddStockCommand}" Margin="3,2"/>
                         </Grid>
                     </GroupBox>
 
@@ -210,32 +259,32 @@
                                     <TextBlock Text="{Binding CashStockProfitLossPercentage, StringFormat=P2}" Foreground="{Binding CashStockProfitLossColor}" FontWeight="Bold" FontSize="13"/>
                                 </StackPanel>
                             </Border>
-                            <DataGrid ItemsSource="{Binding CashStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
+                            <DataGrid ItemsSource="{Binding CashStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="進場均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTemplateColumn Header="損益" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
                                     <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                                <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn Width="80" IsReadOnly="True">
+                                    <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="刪除" Command="{Binding DataContext.DeleteStockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0" Height="24" HorizontalAlignment="Center" Width="60"/>
+                                                <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteStockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -249,40 +298,40 @@
                             <DockPanel>
                             <Border DockPanel.Dock="Top" Background="#FFFFF0F0" BorderBrush="#FFFFB6C1" BorderThickness="1" CornerRadius="3" Padding="4" Margin="0,0,0,3">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="融資自備款: " FontWeight="Bold" FontSize="13"/>
+                                    <TextBlock Text="{Binding TotalMarginSelfFunded, StringFormat={}{0:N0}}" FontWeight="Bold" FontSize="13" Margin="0,0,10,0"/>
                                     <TextBlock Text="融資損益: " FontWeight="Bold" FontSize="13"/>
                                     <TextBlock Text="{Binding TotalMarginProfitLoss, StringFormat={}{0:N0}}" Foreground="{Binding TotalMarginProfitLossColor}" FontWeight="Bold" FontSize="13" Margin="0,0,10,0"/>
                                     <TextBlock Text="報酬率: " FontWeight="Bold" FontSize="13"/>
                                     <TextBlock Text="{Binding TotalMarginProfitLossPercentage, StringFormat=P2}" Foreground="{Binding TotalMarginProfitLossColor}" FontWeight="Bold" FontSize="13"/>
                                 </StackPanel>
                             </Border>
-                            <DataGrid ItemsSource="{Binding MarginStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
+                            <DataGrid ItemsSource="{Binding MarginStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="進場均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="自備金額" Binding="{Binding SelfFunded, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="融資金額" Binding="{Binding LoanAmount, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTemplateColumn Header="損益" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
                                     <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                                <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn Width="80" IsReadOnly="True">
+                                    <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="刪除" Command="{Binding DataContext.DeleteStockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0" Height="24" HorizontalAlignment="Center" Width="60"/>
+                                                <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteStockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -293,10 +342,9 @@
                     </Grid>
                 </DockPanel>
             </GroupBox>
-        </DockPanel>
 
-        <!-- Column 1: Futures -->
-        <GroupBox Grid.Column="1" Header="股票期貨庫存" Margin="10,0,0,0" Padding="5">
+        <!-- Row 1, Col 1: 股票期貨庫存 -->
+        <GroupBox Grid.Row="1" Grid.Column="1" Header="股票期貨庫存" Padding="5" Margin="10,5,0,0">
             <DockPanel>
                 <Border DockPanel.Dock="Top" Background="#FFF0F8FF" BorderBrush="#FFADD8E6" BorderThickness="1" CornerRadius="3" Padding="5" Margin="0,0,0,5">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -307,30 +355,41 @@
                     </StackPanel>
                 </Border>
 
-                <GroupBox DockPanel.Dock="Bottom" Header="新增股票期貨" Padding="5">
+                <GroupBox DockPanel.Dock="Bottom" Header="新增股票期貨" Padding="3">
                     <Grid>
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="股票代號:" VerticalAlignment="Center" Margin="2"/>
+                        <!-- Row 0: 代號 + 名稱 -->
+                        <TextBlock Text="代號:" VerticalAlignment="Center" Margin="2"/>
                         <TextBox Grid.Column="1" Text="{Binding NewFutureStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                        <TextBlock Grid.Row="1" Text="標的名稱:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewFutureName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                        <TextBlock Grid.Row="2" Text="持倉口數:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewFutureLots}" Margin="2"/>
-                        <TextBlock Grid.Row="3" Text="多空方向:" VerticalAlignment="Center" Margin="2"/>
-                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="2" Text="名稱:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Column="3" Text="{Binding NewFutureName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                        <!-- Row 1: 口數 + 方向 -->
+                        <TextBlock Grid.Row="1" Text="口數:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewFutureLots}" Margin="2"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="方向:" VerticalAlignment="Center" Margin="2"/>
+                        <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                             <RadioButton Content="多單" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Long}}" Margin="5,0"/>
                             <RadioButton Content="空單" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Short}}" Margin="5,0"/>
                         </StackPanel>
-                        <TextBlock Grid.Row="4" Text="成本價格:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding NewFutureCostPrice}" Margin="2"/>
-                        <TextBlock Grid.Row="5" Text="目前市價:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding NewFutureCurrentPrice}" Margin="2"/>
-                        <TextBlock Grid.Row="6" Text="合約類型:" VerticalAlignment="Center" Margin="2"/>
-                        <CheckBox Grid.Row="6" Grid.Column="1" Content="小型合約 (100股/口)" IsChecked="{Binding NewFutureIsSmallContract}" VerticalAlignment="Center" Margin="5,0"/>
-                        <Button Grid.Row="7" Grid.Column="1" Content="新增股票期貨" Command="{Binding AddFutureCommand}" Margin="5"/>
+                        <!-- Row 2: 成本 + 市價 -->
+                        <TextBlock Grid.Row="2" Text="成本:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewFutureCostPrice}" Margin="2"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="市價:" VerticalAlignment="Center" Margin="2"/>
+                        <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding NewFutureCurrentPrice}" Margin="2"/>
+                        <!-- Row 3: 合約類型 + 新增按鈕 -->
+                        <CheckBox Grid.Row="3" Grid.ColumnSpan="2" Content="小型合約 (100股/口)" IsChecked="{Binding NewFutureIsSmallContract}" VerticalAlignment="Center" Margin="5,2"/>
+                        <Button Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="新增股票期貨" Command="{Binding AddFutureCommand}" Margin="3,2"/>
                     </Grid>
                 </GroupBox>
 
@@ -341,33 +400,33 @@
                     </Grid.RowDefinitions>
                     
                     <GroupBox Header="大型合約 (2000股)" Margin="0,0,0,5">
-                        <DataGrid ItemsSource="{Binding LargeFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
+                        <DataGrid ItemsSource="{Binding LargeFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
+                                <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTemplateColumn Header="損益" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                            <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Width="80" IsReadOnly="True">
+                                <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="刪除" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0" Height="24" HorizontalAlignment="Center" Width="60"/>
+                                            <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -376,33 +435,33 @@
                     </GroupBox>
 
                     <GroupBox Grid.Row="1" Header="小型合約 (100股)" Margin="0,5,0,0">
-                        <DataGrid ItemsSource="{Binding SmallFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto">
+                        <DataGrid ItemsSource="{Binding SmallFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource RightAlignedCellStyle}"/>
+                                <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTemplateColumn Header="損益" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource RightAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                            <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Width="80" IsReadOnly="True">
+                                <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="刪除" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0" Height="24" HorizontalAlignment="Center" Width="60"/>
+                                            <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -413,76 +472,57 @@
             </DockPanel>
         </GroupBox>
 
-        <!-- Column 2: Results -->
-        <GroupBox Grid.Column="2" Header="最終結算報告" Margin="10,0,0,0" Padding="10" FontWeight="Bold">
+        <!-- Row 0-1, Col 2: 結算報告 (跨兩行) -->
+        <GroupBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Header="最終結算報告" Margin="10,0,0,0" Padding="10" FontWeight="Bold">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- 1. 股票市值明細 -->
-                    <TextBlock Text="[股票市值明細]" Margin="0,8" FontSize="17"/>
+                    <TextBlock Text="[股票市值明細]" Margin="0,5,0,3" FontSize="17"/>
                     <Separator/>
-                    <Grid Margin="5,10">
+                    <Grid Margin="5,3">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <TextBlock Text="現股市值:" FontSize="16"/>
                         <TextBlock Grid.Column="1" Text="{Binding CashStockValue, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16"/>
                     </Grid>
-                    <Grid Margin="5,10">
+                    <Grid Margin="5,3">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <TextBlock Text="融資市值:" FontSize="16"/>
                         <TextBlock Grid.Column="1" Text="{Binding MarginStockValue, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16"/>
                     </Grid>
-                    <Grid Margin="5,10">
+                    <Grid Margin="5,3">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <TextBlock Text="股票總市值:" FontSize="16" FontWeight="ExtraBold"/>
                         <TextBlock Grid.Column="1" Text="{Binding TotalStockValue, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16" FontWeight="ExtraBold"/>
                     </Grid>
 
                     <!-- 2. 期貨市值明細 -->
-                    <TextBlock Text="[期貨市值明細]" Margin="0,25,0,8" FontSize="17"/>
+                    <TextBlock Text="[期貨市值明細]" Margin="0,12,0,3" FontSize="17"/>
                     <Separator/>
-                    <Grid Margin="5,10">
+                    <Grid Margin="5,3">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <TextBlock Text="期貨總市值:" FontSize="16" FontWeight="ExtraBold"/>
                         <TextBlock Grid.Column="1" Text="{Binding TotalFuturesExposure, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16" FontWeight="ExtraBold"/>
                     </Grid>
 
                     <!-- 3. 曝險與槓桿 -->
-                    <TextBlock Text="[曝險與槓桿]" Margin="0,25,0,8" FontSize="17"/>
+                    <TextBlock Text="[曝險與槓桿]" Margin="0,12,0,3" FontSize="17"/>
                     <Separator/>
-                    <Grid Margin="5,10">
+                    <Grid Margin="5,3">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <TextBlock Text="總曝險 (分子):" FontSize="16"/>
                         <TextBlock Grid.Column="1" Text="{Binding TotalExposure, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" Foreground="DarkRed" FontSize="16"/>
                     </Grid>
-                    <Grid Margin="5,10">
+                    <Grid Margin="5,3">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <TextBlock Text="淨資產 (分母):" FontSize="16"/>
                         <TextBlock Grid.Column="1" Text="{Binding TotalCapital, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" Foreground="DarkGreen" FontSize="16"/>
                     </Grid>
 
                     <!-- 4. 槓桿倍數 -->
-                    <Border Background="LightYellow" CornerRadius="5" Padding="15" Margin="0,15,0,0">
+                    <Border Background="LightYellow" CornerRadius="5" Padding="10" Margin="0,10,0,0">
                         <StackPanel>
                             <TextBlock Text="總資產槓桿倍數" FontSize="18" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding Leverage, StringFormat={}{0:F2} 倍}" FontSize="36" FontWeight="ExtraBold" HorizontalAlignment="Center" Margin="0,8,0,10"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- 風險狀態 -->
-                    <Border Background="AliceBlue" CornerRadius="5" Padding="15" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock Text="當前風險狀態" FontSize="18" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding RiskStatus}" FontSize="32" FontWeight="ExtraBold" HorizontalAlignment="Center" Margin="0,8,0,10" Foreground="Crimson"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- 5. 公式說明 -->
-                    <Border Background="#FFF5F5F5" CornerRadius="5" Padding="10" Margin="0,15,0,0">
-                        <StackPanel>
-                            <TextBlock Text="[公式說明]" FontSize="16" Margin="0,0,0,8"/>
-                            <Separator Margin="0,0,0,8"/>
-                            <TextBlock Text="總曝險 = 股票總市值 + 期貨總市值" FontSize="15" Margin="0,0,0,5"/>
-                            <TextBlock Text="淨資產 = 現股市值 + 融資自備款 + 融資損益 + 可用資金 + 交割款 + 期貨權益金" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,5"/>
-                            <TextBlock Text="槓桿倍數 = 總曝險 / 淨資產" FontSize="15"/>
+                            <TextBlock Text="{Binding Leverage, StringFormat={}{0:F2} 倍}" FontSize="36" FontWeight="ExtraBold" HorizontalAlignment="Center" Margin="0,4,0,4"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
