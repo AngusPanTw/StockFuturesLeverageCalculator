@@ -1,0 +1,52 @@
+<Window x:Class="LeverageCalculator.BatchImportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="批次匯入股票期貨" Height="500" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 格式說明 -->
+        <Border Grid.Row="0" Background="#FFF5F5FF" BorderBrush="#FFB0B0E0" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,10">
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FF333333">
+                <Run FontWeight="Bold" FontSize="13">格式說明</Run><LineBreak/>
+                <Run Foreground="Gray">每行一筆，代號與口數用空格或 Tab 分隔</Run><LineBreak/>
+                <Run Foreground="#FF4444AA" FontWeight="SemiBold">大</Run><Run Foreground="Gray"> / </Run><Run Foreground="#FF4444AA" FontWeight="SemiBold">小</Run><Run Foreground="Gray"> — 切換合約類型（預設大型）</Run><LineBreak/>
+                <Run Foreground="#FF4444AA" FontWeight="SemiBold">26年03月</Run><Run Foreground="Gray"> — 設定合約年月</Run><LineBreak/>
+                <Run Foreground="Gray">方向預設全部多單</Run>
+            </TextBlock>
+        </Border>
+
+        <!-- 多行輸入 + 浮水印範例 -->
+        <Grid Grid.Row="1">
+            <TextBox x:Name="InputTextBox"
+                     AcceptsReturn="True" AcceptsTab="True"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" FontSize="14"
+                     TextWrapping="NoWrap"
+                     Padding="5"
+                     TextChanged="InputTextBox_TextChanged"/>
+            <TextBlock x:Name="PlaceholderText" IsHitTestVisible="False"
+                       FontFamily="Consolas" FontSize="14" Padding="8,7"
+                       Foreground="#FFAAAAAA" FontStyle="Italic"
+                       VerticalAlignment="Top"
+                       Text="大&#x0a;26年03月&#x0a;1303    50&#x0a;2408    20&#x0a;2337    50&#x0a;小&#x0a;6669    20&#x0a;3653    30"/>
+        </Grid>
+
+        <!-- 解析錯誤訊息 -->
+        <TextBlock Grid.Row="2" x:Name="ErrorText" Foreground="Red" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+
+        <!-- 按鈕列 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="匯入" Width="80" Height="30" FontSize="13" FontWeight="SemiBold" Click="ImportButton_Click" IsDefault="True"/>
+            <Button Content="取消" Width="80" Height="30" FontSize="13" Click="CancelButton_Click" IsCancel="True" Margin="10,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

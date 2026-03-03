@@ -9,9 +9,9 @@
         xmlns:converters="clr-namespace:LeverageCalculator.Converters"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel, IsDesignTimeCreatable=True}"
-        Title="投資組合槓桿計算機 v2.0 (WPF)" Height="800" Width="1600">
+        Title="2317forever 股票期貨庫存追蹤器" Height="850" Width="1400">
     <Window.Resources>
-        <!-- Global Styles for UI Beautification -->
+        <!-- Global Styles -->
         <Style TargetType="GroupBox">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -123,21 +123,58 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Group Card Delete Button -->
+        <Style x:Key="GroupDeleteButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="Transparent" CornerRadius="9" Width="18" Height="18">
+                            <TextBlock Text="X" FontSize="9" FontWeight="Bold" Foreground="#FF999999" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="icon"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFF4444"/>
+                                <Setter TargetName="icon" Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
+
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" MinWidth="400"/>
-            <ColumnDefinition Width="2*" MinWidth="400"/>
-            <ColumnDefinition Width="1*" MinWidth="300"/>
+            <ColumnDefinition Width="2*" MinWidth="450"/>
+            <ColumnDefinition Width="3*" MinWidth="400"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Row 0, Col 0: 總資產 + 更新收盤價 -->
-        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
-            <GroupBox Header="總資產" Padding="3">
+        <!-- Row 0: 總市值橫幅 (跨兩欄) -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#FFFFF8DC" BorderBrush="#FFD4A574" BorderThickness="1" CornerRadius="5" Padding="12" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="總市值: " FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="{Binding TotalFuturesExposureInWan}" FontSize="22" FontWeight="ExtraBold" Foreground="DarkRed" Margin="0,0,30,0"/>
+                <TextBlock Text="總口數: " FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding TotalLots, StringFormat={}{0:N0} 口}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 左欄：期貨庫存列表 -->
+        <DockPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+
+            <!-- 新增區 (Top) -->
+            <GroupBox DockPanel.Dock="Top" Header="新增股票期貨" Padding="5" PreviewKeyDown="AddFutureArea_PreviewKeyDown">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -147,386 +184,197 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="可用現金:" VerticalAlignment="Center" Margin="3,2"/>
-                    <TextBox Grid.Column="1" Text="{Binding BankCash, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="3,2"/>
-                    <TextBlock Grid.Column="2" Text="交割款:" VerticalAlignment="Center" Margin="3,2"/>
-                    <TextBox Grid.Column="3" Text="{Binding StockSettlementAmount, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="3,2"/>
-                    <TextBlock Grid.Column="4" Text="權益金:" VerticalAlignment="Center" Margin="3,2"/>
-                    <TextBox Grid.Column="5" Text="{Binding FuturesEquity, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}" Margin="3,2"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <!-- Row 0: 股票代號 + 月份 + 口數 -->
+                    <TextBlock Text="股票代號:" Margin="3,2" FontWeight="Bold" FontSize="13"/>
+                    <TextBox Grid.Column="1" Text="{Binding NewUnderlyingStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="3,2" x:Name="StockCodeTextBox"/>
+                    <TextBlock Grid.Column="2" Text="年:" Margin="3,2" FontWeight="Bold" FontSize="13"/>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="3,2">
+                        <ComboBox ItemsSource="{Binding AvailableYears}" SelectedItem="{Binding NewContractYear}" Width="55" FontSize="12" VerticalContentAlignment="Center"/>
+                        <TextBlock Text="月:" Margin="8,0,3,0" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding AvailableMonths}" SelectedItem="{Binding NewContractMonthNum}" Width="55" FontSize="12" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="4" Text="口數:" Margin="3,2" FontWeight="Bold" FontSize="13"/>
+                    <TextBox Grid.Column="5" Text="{Binding NewFutureLots, UpdateSourceTrigger=PropertyChanged}" Margin="3,2"/>
+                    <!-- Row 1: 大小型 + 多空 + 新增按鈕 -->
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="3,2">
+                        <RadioButton Content="大型" FontWeight="Bold" FontSize="13" IsChecked="{Binding NewFutureIsSmallContract, Converter={StaticResource BooleanRadioConverter}, ConverterParameter=False}" Margin="5,0"/>
+                        <RadioButton Content="小型" FontWeight="Bold" FontSize="13" IsChecked="{Binding NewFutureIsSmallContract, Converter={StaticResource BooleanRadioConverter}, ConverterParameter=True}" Margin="5,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="3,2">
+                        <RadioButton Content="多單" FontWeight="Bold" FontSize="13" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Long}}" Margin="5,0"/>
+                        <RadioButton Content="空單" FontWeight="Bold" FontSize="13" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Short}}" Margin="5,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="3,2">
+                        <Button Content="新增股票期貨" Command="{Binding AddFutureCommand}"/>
+                        <Button Content="批次匯入" Click="BatchImportButton_Click" Background="#FFE8F5E9" BorderBrush="#FF81C784"/>
+                    </StackPanel>
                 </Grid>
             </GroupBox>
-            <StackPanel Margin="5,5,5,0">
-                <Button Content="更新所有收盤價" Command="{Binding FetchAllPricesCommand}" Height="32" FontSize="13">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsUpdatingPrices}" Value="True">
-                                    <Setter Property="IsEnabled" Value="False"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <TextBlock Text="{Binding PriceUpdateStatus}" Margin="5,5,5,0" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="Black"/>
-            </StackPanel>
-        </StackPanel>
 
-        <!-- Row 0, Col 1: 公式說明 -->
-        <GroupBox Grid.Row="0" Grid.Column="1" Header="公式說明" Padding="10" Margin="10,0,0,0" Background="Transparent">
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="總曝險 = 股票總市值 + 期貨總市值" FontSize="14" FontWeight="SemiBold" Margin="0,4"/>
-                <TextBlock Text="淨資產 = 現股市值 + 融資自備款 + 融資損益 + 可用資金 + 交割款 + 期貨權益金" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4"/>
-                <TextBlock Text="槓桿倍數 = 總曝險 / 淨資產" FontSize="14" FontWeight="SemiBold" Margin="0,4"/>
-            </StackPanel>
-        </GroupBox>
-
-        <!-- Row 1, Col 0: 股票庫存 -->
-        <GroupBox Grid.Row="1" Grid.Column="0" Header="股票庫存" Margin="0,5,10,0" Padding="5">
-                <DockPanel>
-                    <GroupBox DockPanel.Dock="Bottom" Header="新增股票" Padding="3">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <!-- Row 0: 代號 + 名稱 -->
-                            <TextBlock Text="代號:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Column="1" Text="{Binding NewStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                            <TextBlock Grid.Column="2" Text="名稱:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Column="3" Text="{Binding NewStockName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                            <!-- Row 1: 類型 + 股數 -->
-                            <TextBlock Grid.Row="1" Text="類型:" VerticalAlignment="Center" Margin="2"/>
-                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <RadioButton Content="現股" IsChecked="{Binding NewStockType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:StockType.Cash}}" Margin="5,0"/>
-                                <RadioButton Content="融資" IsChecked="{Binding NewStockType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:StockType.Margin}}" Margin="5,0"/>
-                            </StackPanel>
-                            <TextBlock Grid.Row="1" Grid.Column="2" Text="股數:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding NewStockShares}" Margin="2"/>
-                            <!-- Row 2: 進場均價 + 現價 -->
-                            <TextBlock Grid.Row="2" Text="均價:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewStockEntryPrice}" Margin="2"/>
-                            <TextBlock Grid.Row="2" Grid.Column="2" Text="現價:" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding NewStockCurrentPrice}" Margin="2"/>
-                            <!-- Row 3: 融資成數 + 新增按鈕 -->
-                            <TextBlock Grid.Row="3" Text="融資成數:" VerticalAlignment="Center" Margin="2">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding NewStockType}" Value="Cash">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewStockMarginRatio}" Margin="2">
-                                <TextBox.Style>
-                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding NewStockType}" Value="Cash">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Style>
-                            </TextBox>
-                            <Button Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="新增股票" Command="{Binding AddStockCommand}" Margin="3,2"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="3*"/>
-                            <RowDefinition Height="2*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- 現股 -->
-                        <GroupBox Header="現股" Margin="0,0,0,5">
-                            <DockPanel>
-                            <Border DockPanel.Dock="Top" Background="#FFF0F8FF" BorderBrush="#FFADD8E6" BorderThickness="1" CornerRadius="3" Padding="4" Margin="0,0,0,3">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <TextBlock Text="現股損益: " FontWeight="Bold" FontSize="13"/>
-                                    <TextBlock Text="{Binding CashStockProfitLoss, StringFormat={}{0:N0}}" Foreground="{Binding CashStockProfitLossColor}" FontWeight="Bold" FontSize="13" Margin="0,0,10,0"/>
-                                    <TextBlock Text="報酬率: " FontWeight="Bold" FontSize="13"/>
-                                    <TextBlock Text="{Binding CashStockProfitLossPercentage, StringFormat=P2}" Foreground="{Binding CashStockProfitLossColor}" FontWeight="Bold" FontSize="13"/>
-                                </StackPanel>
-                            </Border>
-                            <DataGrid ItemsSource="{Binding CashStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTemplateColumn Header="損益" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteStockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            </DockPanel>
-                        </GroupBox>
-
-                        <!-- 融資 -->
-                        <GroupBox Grid.Row="1" Header="融資" Margin="0,5,0,0">
-                            <DockPanel>
-                            <Border DockPanel.Dock="Top" Background="#FFFFF0F0" BorderBrush="#FFFFB6C1" BorderThickness="1" CornerRadius="3" Padding="4" Margin="0,0,0,3">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <TextBlock Text="融資自備款: " FontWeight="Bold" FontSize="13"/>
-                                    <TextBlock Text="{Binding TotalMarginSelfFunded, StringFormat={}{0:N0}}" FontWeight="Bold" FontSize="13" Margin="0,0,10,0"/>
-                                    <TextBlock Text="融資損益: " FontWeight="Bold" FontSize="13"/>
-                                    <TextBlock Text="{Binding TotalMarginProfitLoss, StringFormat={}{0:N0}}" Foreground="{Binding TotalMarginProfitLossColor}" FontWeight="Bold" FontSize="13" Margin="0,0,10,0"/>
-                                    <TextBlock Text="報酬率: " FontWeight="Bold" FontSize="13"/>
-                                    <TextBlock Text="{Binding TotalMarginProfitLossPercentage, StringFormat=P2}" Foreground="{Binding TotalMarginProfitLossColor}" FontWeight="Bold" FontSize="13"/>
-                                </StackPanel>
-                            </Border>
-                            <DataGrid ItemsSource="{Binding MarginStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTemplateColumn Header="損益" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteStockCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            </DockPanel>
-                        </GroupBox>
-                    </Grid>
-                </DockPanel>
-            </GroupBox>
-
-        <!-- Row 1, Col 1: 股票期貨庫存 -->
-        <GroupBox Grid.Row="1" Grid.Column="1" Header="股票期貨庫存" Padding="5" Margin="10,5,0,0">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Background="#FFF0F8FF" BorderBrush="#FFADD8E6" BorderThickness="1" CornerRadius="3" Padding="5" Margin="0,0,0,5">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <TextBlock Text="期貨總損益: " FontWeight="Bold" FontSize="14"/>
-                        <TextBlock Text="{Binding TotalFuturesProfitLoss, StringFormat={}{0:N0}}" Foreground="{Binding TotalFuturesProfitLossColor}" FontWeight="Bold" FontSize="14" Margin="0,0,15,0"/>
-                        <TextBlock Text="總報酬率: " FontWeight="Bold" FontSize="14"/>
-                        <TextBlock Text="{Binding TotalFuturesProfitLossPercentage, StringFormat=P2}" Foreground="{Binding TotalFuturesProfitLossColor}" FontWeight="Bold" FontSize="14"/>
+            <!-- 底部：摘要 + 更新按鈕 -->
+            <StackPanel DockPanel.Dock="Bottom" Margin="5,5,5,0">
+                <Border Background="#FFF0F8FF" BorderBrush="#FFADD8E6" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,5">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="期貨總市值: " FontWeight="ExtraBold" FontSize="16"/>
+                        <TextBlock Text="{Binding TotalFuturesExposureInWan}" FontWeight="ExtraBold" FontSize="16" Foreground="DarkRed" Margin="0,0,20,0"/>
+                        <TextBlock Text="總口數: " FontWeight="Bold" FontSize="14"/>
+                        <TextBlock Text="{Binding TotalLots, StringFormat={}{0:N0} 口}" FontWeight="Bold" FontSize="14"/>
                     </StackPanel>
                 </Border>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="更新所有收盤價" Command="{Binding FetchAllPricesCommand}" Height="32" FontSize="13" Padding="20,4">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUpdatingPrices}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <TextBlock Text="{Binding PriceUpdateStatus}" Margin="5,3,5,0" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+            </StackPanel>
 
-                <GroupBox DockPanel.Dock="Bottom" Header="新增股票期貨" Padding="3">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <!-- Row 0: 代號 + 名稱 -->
-                        <TextBlock Text="代號:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Column="1" Text="{Binding NewFutureStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                        <TextBlock Grid.Column="2" Text="名稱:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Column="3" Text="{Binding NewFutureName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                        <!-- Row 1: 口數 + 方向 -->
-                        <TextBlock Grid.Row="1" Text="口數:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewFutureLots}" Margin="2"/>
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="方向:" VerticalAlignment="Center" Margin="2"/>
-                        <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                            <RadioButton Content="多單" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Long}}" Margin="5,0"/>
-                            <RadioButton Content="空單" IsChecked="{Binding NewFuturePosition, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:PositionType.Short}}" Margin="5,0"/>
-                        </StackPanel>
-                        <!-- Row 2: 成本 + 市價 -->
-                        <TextBlock Grid.Row="2" Text="成本:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewFutureCostPrice}" Margin="2"/>
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="市價:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding NewFutureCurrentPrice}" Margin="2"/>
-                        <!-- Row 3: 合約類型 + 新增按鈕 -->
-                        <CheckBox Grid.Row="3" Grid.ColumnSpan="2" Content="小型合約 (100股/口)" IsChecked="{Binding NewFutureIsSmallContract}" VerticalAlignment="Center" Margin="5,2"/>
-                        <Button Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="新增股票期貨" Command="{Binding AddFutureCommand}" Margin="3,2"/>
-                    </Grid>
-                </GroupBox>
+            <!-- DataGrid：所有期貨（合併大小型） -->
+            <DataGrid ItemsSource="{Binding AllFutures}" AutoGenerateColumns="False" CanUserAddRows="False"
+                      ColumnWidth="*" HorizontalScrollBarVisibility="Disabled" Margin="5"
+                      x:Name="FuturesDataGrid"
+                      PreviewMouseLeftButtonDown="FuturesDataGrid_PreviewMouseLeftButtonDown"
+                      PreviewMouseMove="FuturesDataGrid_PreviewMouseMove">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}" Width="1.5*"/>
+                    <DataGridTextColumn Header="股票代號" Binding="{Binding UnderlyingStockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                    <DataGridTextColumn Header="類型" Binding="{Binding ContractTypeDisplay}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}" Width="0.6*"/>
+                    <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}" Width="0.6*"/>
+                    <DataGridTextColumn Header="方向" Binding="{Binding PositionDisplay}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}" Width="0.5*"/>
+                    <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                    <DataGridTextColumn Header="市值" Binding="{Binding ExposureInWan}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}" Width="1.2*"/>
+                    <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
 
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    
-                    <GroupBox Header="大型合約 (2000股)" Margin="0,0,0,5">
-                        <DataGrid ItemsSource="{Binding LargeFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTemplateColumn Header="損益" IsReadOnly="True">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </GroupBox>
+        <!-- 右欄：分群摘要報告 -->
+        <DockPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
 
-                    <GroupBox Grid.Row="1" Header="小型合約 (100股)" Margin="0,5,0,0">
-                        <DataGrid ItemsSource="{Binding SmallFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="口數" Binding="{Binding Lots, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTemplateColumn Header="損益" IsReadOnly="True">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="報酬率" IsReadOnly="True">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLossPercentage, StringFormat=P2}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="刪除" Width="38" IsReadOnly="True">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource DeleteButtonStyle}" Command="{Binding DataContext.DeleteFutureCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </GroupBox>
-                </Grid>
-            </DockPanel>
-        </GroupBox>
+            <!-- 新增群組 (Top) -->
+            <GroupBox DockPanel.Dock="Top" Header="群組管理" Padding="5" PreviewKeyDown="GroupNameArea_PreviewKeyDown">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="群組名稱:" Margin="3,2"/>
+                    <TextBox Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="3,2" x:Name="GroupNameTextBox"/>
+                    <Button Content="新增群組" Command="{Binding CreateGroupCommand}" Margin="3,2"/>
+                </StackPanel>
+            </GroupBox>
 
-        <!-- Row 0-1, Col 2: 結算報告 (跨兩行) -->
-        <GroupBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Header="最終結算報告" Margin="10,0,0,0" Padding="10" FontWeight="Bold">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <!-- 底部：全部總市值 -->
+            <Border DockPanel.Dock="Bottom" Background="#FFFFF8DC" BorderBrush="#FFD4A574" BorderThickness="1" CornerRadius="5" Padding="10" Margin="5,5,5,0">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="全部總市值" FontSize="16" FontWeight="ExtraBold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding TotalFuturesExposureInWan}" FontSize="28" FontWeight="ExtraBold" Foreground="DarkRed" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 分群列表 + 未分群 -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="5">
                 <StackPanel>
-                    <!-- 1. 股票市值明細 -->
-                    <TextBlock Text="[股票市值明細]" Margin="0,5,0,3" FontSize="17"/>
-                    <Separator/>
-                    <Grid Margin="5,3">
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <TextBlock Text="現股市值:" FontSize="16"/>
-                        <TextBlock Grid.Column="1" Text="{Binding CashStockValue, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16"/>
-                    </Grid>
-                    <Grid Margin="5,3">
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <TextBlock Text="融資市值:" FontSize="16"/>
-                        <TextBlock Grid.Column="1" Text="{Binding MarginStockValue, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16"/>
-                    </Grid>
-                    <Grid Margin="5,3">
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <TextBlock Text="股票總市值:" FontSize="16" FontWeight="ExtraBold"/>
-                        <TextBlock Grid.Column="1" Text="{Binding TotalStockValue, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16" FontWeight="ExtraBold"/>
-                    </Grid>
+                    <!-- 各群組卡片 (WrapPanel 自動換行排列) -->
+                    <ItemsControl ItemsSource="{Binding FutureGroups}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#FFF5F5FF" BorderBrush="#FFB0B0E0" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,8,8"
+                                        AllowDrop="True" Drop="GroupCard_Drop" DragOver="GroupCard_DragOver"
+                                        Tag="{Binding GroupName}" MinWidth="180">
+                                    <StackPanel>
+                                        <!-- 群組標題列 -->
+                                        <DockPanel Margin="0,0,0,3">
+                                            <Button DockPanel.Dock="Right" Style="{StaticResource GroupDeleteButtonStyle}"
+                                                    Command="{Binding DataContext.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" ToolTip="刪除群組"/>
+                                            <TextBlock Text="{Binding GroupName}" FontSize="14" FontWeight="ExtraBold" Foreground="#FF4444AA"/>
+                                        </DockPanel>
+                                        <!-- 群組摘要 -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                            <TextBlock Text="{Binding TotalExposureInWan}" FontWeight="Bold" FontSize="13" Foreground="DarkRed" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{Binding TotalLots, StringFormat={}{0:N0} 口}" FontWeight="Bold" FontSize="12" Foreground="#FF666666"/>
+                                        </StackPanel>
+                                        <Separator Margin="0,2"/>
+                                        <!-- 群組內各項目 -->
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="1,1">
+                                                        <Button DockPanel.Dock="Right" Style="{StaticResource GroupDeleteButtonStyle}"
+                                                                Command="{Binding DataContext.RemoveFromGroupCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}" ToolTip="移出群組"/>
+                                                        <TextBlock FontSize="11" FontWeight="Normal">
+                                                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                                                            <Run Text="(" Foreground="Gray"/><Run Text="{Binding ContractTypeDisplay, Mode=OneWay}" Foreground="Gray"/><Run Text=")" Foreground="Gray"/>
+                                                            <Run Text=" "/>
+                                                            <Run Text="{Binding Lots, Mode=OneWay, StringFormat=N0}" FontWeight="SemiBold"/>
+                                                            <Run Text="口 "/>
+                                                            <Run Text="{Binding ExposureInWan, Mode=OneWay}" Foreground="DarkRed" FontWeight="SemiBold"/>
+                                                        </TextBlock>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                    <!-- 2. 期貨市值明細 -->
-                    <TextBlock Text="[期貨市值明細]" Margin="0,12,0,3" FontSize="17"/>
-                    <Separator/>
-                    <Grid Margin="5,3">
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <TextBlock Text="期貨總市值:" FontSize="16" FontWeight="ExtraBold"/>
-                        <TextBlock Grid.Column="1" Text="{Binding TotalFuturesExposure, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" FontSize="16" FontWeight="ExtraBold"/>
-                    </Grid>
-
-                    <!-- 3. 曝險與槓桿 -->
-                    <TextBlock Text="[曝險與槓桿]" Margin="0,12,0,3" FontSize="17"/>
-                    <Separator/>
-                    <Grid Margin="5,3">
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <TextBlock Text="總曝險 (分子):" FontSize="16"/>
-                        <TextBlock Grid.Column="1" Text="{Binding TotalExposure, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" Foreground="DarkRed" FontSize="16"/>
-                    </Grid>
-                    <Grid Margin="5,3">
-                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-                        <TextBlock Text="淨資產 (分母):" FontSize="16"/>
-                        <TextBlock Grid.Column="1" Text="{Binding TotalCapital, StringFormat={}{0:N0} 元}" HorizontalAlignment="Right" Foreground="DarkGreen" FontSize="16"/>
-                    </Grid>
-
-                    <!-- 4. 槓桿倍數 -->
-                    <Border Background="LightYellow" CornerRadius="5" Padding="10" Margin="0,10,0,0">
+                    <!-- 未分群區域 -->
+                    <Border Background="#FFF5F5F5" BorderBrush="#FFCCCCCC" BorderThickness="1" CornerRadius="5" Padding="8" Margin="0,0,0,8"
+                            AllowDrop="True" Drop="UngroupedArea_Drop" DragOver="GroupCard_DragOver"
+                            Tag="">
                         <StackPanel>
-                            <TextBlock Text="總資產槓桿倍數" FontSize="18" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding Leverage, StringFormat={}{0:F2} 倍}" FontSize="36" FontWeight="ExtraBold" HorizontalAlignment="Center" Margin="0,4,0,4"/>
+                            <TextBlock Text="[未分群]" FontSize="14" FontWeight="ExtraBold" Foreground="#FF888888" Margin="0,0,0,5"/>
+                            <ItemsControl ItemsSource="{Binding UngroupedFutures}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="3,2">
+                                            <!-- 右側：群組下拉選單 -->
+                                            <ComboBox DockPanel.Dock="Right"
+                                                      ItemsSource="{Binding DataContext.FutureGroups, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="GroupName"
+                                                      SelectionChanged="GroupComboBox_SelectionChanged"
+                                                      Width="90" Height="22" FontSize="11" Margin="5,0,0,0"
+                                                      VerticalContentAlignment="Center"/>
+                                            <!-- 左側：項目資訊 -->
+                                            <TextBlock FontSize="12" FontWeight="Normal" VerticalAlignment="Center">
+                                                <Run Text="{Binding Name, Mode=OneWay}"/>
+                                                <Run Text="(" Foreground="Gray"/><Run Text="{Binding ContractTypeDisplay, Mode=OneWay}" Foreground="Gray"/><Run Text=")" Foreground="Gray"/>
+                                                <Run Text=" "/>
+                                                <Run Text="{Binding Lots, Mode=OneWay, StringFormat=N0}" FontWeight="SemiBold"/>
+                                                <Run Text="口  "/>
+                                                <Run Text="{Binding ExposureInWan, Mode=OneWay}" Foreground="DarkRed" FontWeight="SemiBold"/>
+                                            </TextBlock>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
-        </GroupBox>
+        </DockPanel>
     </Grid>
 </Window>

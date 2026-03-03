@@ -6,5 +6,6 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <converters:BooleanRadioConverter x:Key="BooleanRadioConverter" />
     </Application.Resources>
 </Application>

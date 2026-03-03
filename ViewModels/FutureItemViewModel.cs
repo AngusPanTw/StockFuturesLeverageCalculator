@@ -3,7 +3,7 @@ using LeverageCalculator.Models;
 namespace LeverageCalculator.ViewModels
 {
     /// <summary>
-    /// 期貨項目 ViewModel，封裝 FutureItem 並提供屬性變更通知與計算邏輯
+    /// 期貨項目 ViewModel，封裝 FutureItem 並提供屬性變更通知與市值計算
     /// </summary>
     public class FutureItemViewModel : BaseViewModel
     {
@@ -15,7 +15,25 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
-        /// 期貨代碼（Contract + ContractMonth，如 "DIF202603"）
+        /// 標的股票代號（如 "2330"）
+        /// </summary>
+        public string UnderlyingStockCode
+        {
+            get => _future.UnderlyingStockCode;
+            set { _future.UnderlyingStockCode = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// 合約月份（如 "2603"）
+        /// </summary>
+        public string ContractMonth
+        {
+            get => _future.ContractMonth;
+            set { _future.ContractMonth = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// 完整期貨代碼（自動組合，如 "CDF202603"）
         /// </summary>
         public string StockCode
         {
@@ -24,7 +42,7 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
-        /// 標的名稱
+        /// 合約名稱
         /// </summary>
         public string Name
         {
@@ -56,21 +74,7 @@ namespace LeverageCalculator.ViewModels
             {
                 _future.Position = value;
                 OnPropertyChanged();
-                NotifyCalculatedProperties();
-            }
-        }
-
-        /// <summary>
-        /// 成本價格
-        /// </summary>
-        public decimal CostPrice
-        {
-            get => _future.CostPrice;
-            set
-            {
-                _future.CostPrice = value;
-                OnPropertyChanged();
-                NotifyCalculatedProperties();
+                OnPropertyChanged(nameof(PositionDisplay));
             }
         }
 
@@ -99,8 +103,18 @@ namespace LeverageCalculator.ViewModels
                 _future.IsSmallContract = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SharesPerLot));
+                OnPropertyChanged(nameof(ContractTypeDisplay));
                 NotifyCalculatedProperties();
             }
+        }
+
+        /// <summary>
+        /// 所屬群組名稱
+        /// </summary>
+        public string GroupName
+        {
+            get => _future.GroupName;
+            set { _future.GroupName = value; OnPropertyChanged(); }
         }
 
         /// <summary>
@@ -109,40 +123,24 @@ namespace LeverageCalculator.ViewModels
         public int SharesPerLot => IsSmallContract ? 100 : 2000;
 
         /// <summary>
-        /// 曝險市值 (市價 * 股數 * 口數)
+        /// 合約類型顯示文字
+        /// </summary>
+        public string ContractTypeDisplay => IsSmallContract ? "小型" : "大型";
+
+        /// <summary>
+        /// 多空方向顯示文字
+        /// </summary>
+        public string PositionDisplay => Position == PositionType.Long ? "多" : "空";
+
+        /// <summary>
+        /// 市值 (市價 × 股數 × 口數)
         /// </summary>
         public decimal Exposure => CurrentPrice * SharesPerLot * Lots;
 
         /// <summary>
-        /// 未實現損益
+        /// 市值（萬元），小數後一位
         /// </summary>
-        public decimal ProfitLoss
-        {
-            get
-            {
-                decimal diff = Position == PositionType.Long
-                    ? CurrentPrice - CostPrice
-                    : CostPrice - CurrentPrice;
-                return diff * SharesPerLot * Lots;
-            }
-        }
-
-        /// <summary>
-        /// 報酬率 (%)
-        /// </summary>
-        public double ProfitLossPercentage
-        {
-            get
-            {
-                decimal initialValue = CostPrice * SharesPerLot * Lots;
-                return initialValue != 0 ? (double)(ProfitLoss / initialValue) : 0;
-            }
-        }
-
-        /// <summary>
-        /// 損益顏色 (&gt;=0 紅色, &lt;0 綠色)
-        /// </summary>
-        public string ProfitLossColor => ProfitLoss >= 0 ? "Red" : "Green";
+        public string ExposureInWan => FormatWan(Exposure);
 
         /// <summary>
         /// 取得底層 Model（供序列化使用）
@@ -152,9 +150,7 @@ namespace LeverageCalculator.ViewModels
         private void NotifyCalculatedProperties()
         {
             OnPropertyChanged(nameof(Exposure));
-            OnPropertyChanged(nameof(ProfitLoss));
-            OnPropertyChanged(nameof(ProfitLossPercentage));
-            OnPropertyChanged(nameof(ProfitLossColor));
+            OnPropertyChanged(nameof(ExposureInWan));
         }
     }
 }

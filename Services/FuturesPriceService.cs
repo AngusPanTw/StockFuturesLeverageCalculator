@@ -76,7 +76,7 @@ namespace LeverageCalculator.Services
                     {
                         continue;
                     }
-                    string tradingSession = sessionEl.GetString() ?? "";
+                    string tradingSession = sessionEl.GetString() ?? string.Empty;
                     if (tradingSession != "一般")
                     {
                         continue;
@@ -86,7 +86,7 @@ namespace LeverageCalculator.Services
                     {
                         continue;
                     }
-                    string contractMonth = monthEl.GetString() ?? "";
+                    string contractMonth = monthEl.GetString() ?? string.Empty;
                     if (contractMonth.Contains('/'))
                     {
                         continue;
@@ -96,7 +96,7 @@ namespace LeverageCalculator.Services
                     {
                         continue;
                     }
-                    string lastStr = (lastEl.GetString() ?? "").Replace(",", "");
+                    string lastStr = (lastEl.GetString() ?? string.Empty).Replace(",", string.Empty);
                     if (string.IsNullOrEmpty(lastStr) || lastStr == "-")
                     {
                         continue;
@@ -113,8 +113,8 @@ namespace LeverageCalculator.Services
                         continue;
                     }
 
-                    string contract = contractEl.GetString() ?? "";
-                    string date = dateEl.GetString() ?? "";
+                    string contract = contractEl.GetString() ?? string.Empty;
+                    string date = dateEl.GetString() ?? string.Empty;
                     string key = contract + contractMonth;
 
                     prices[key] = new FuturesPriceResult
