@@ -1,11 +1,10 @@
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace LeverageCalculator
 {
     /// <summary>
-    /// 批次匯入視窗，解析多行文字為期貨項目列表
+    /// 批次匯入視窗，雙區塊設計（大型/小型合約分開輸入）
     /// </summary>
     public partial class BatchImportWindow : Window
     {
@@ -14,111 +13,61 @@ namespace LeverageCalculator
         /// </summary>
         public List<BatchImportItem> ImportedItems { get; private set; } = new List<BatchImportItem>();
 
-        private static readonly Regex YearMonthPattern = new Regex(@"^(\d+)年(\d+)月$");
-
-        public BatchImportWindow()
+        public BatchImportWindow(List<string> availableYears, List<string> availableMonths,
+            string defaultYear, string defaultMonth)
         {
             InitializeComponent();
-            InputTextBox.Focus();
+
+            YearComboBox.ItemsSource = availableYears;
+            YearComboBox.SelectedItem = defaultYear;
+
+            MonthComboBox.ItemsSource = availableMonths;
+            MonthComboBox.SelectedItem = defaultMonth;
+
+            Loaded += (_, _) => LargeContractTextBox.Focus();
         }
 
-        private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void LargeContractTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            PlaceholderText.Visibility = string.IsNullOrEmpty(InputTextBox.Text)
+            LargePlaceholder.Visibility = string.IsNullOrEmpty(LargeContractTextBox.Text)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private void SmallContractTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            SmallPlaceholder.Visibility = string.IsNullOrEmpty(SmallContractTextBox.Text)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
-            string text = InputTextBox.Text?.Trim() ?? string.Empty;
-            if (string.IsNullOrEmpty(text))
+            HideError();
+
+            string? selectedYear = YearComboBox.SelectedItem as string;
+            string? selectedMonth = MonthComboBox.SelectedItem as string;
+
+            if (string.IsNullOrEmpty(selectedYear) || string.IsNullOrEmpty(selectedMonth))
             {
-                ShowError("請輸入匯入內容");
+                ShowError("請選擇合約年份與月份");
+                return;
+            }
+
+            string largeText = LargeContractTextBox.Text?.Trim() ?? string.Empty;
+            string smallText = SmallContractTextBox.Text?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrEmpty(largeText) && string.IsNullOrEmpty(smallText))
+            {
+                ShowError("請至少在一個合約區塊中輸入資料");
                 return;
             }
 
             List<BatchImportItem> items = new List<BatchImportItem>();
             List<string> errors = new List<string>();
 
-            bool isSmall = false;
-            string year = string.Empty;
-            string month = string.Empty;
-
-            string[] lines = text.Split('\n');
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i].Trim();
-                int lineNum = i + 1;
-
-                if (string.IsNullOrEmpty(line))
-                {
-                    continue;
-                }
-
-                // 切換大型/小型
-                if (line == "大")
-                {
-                    isSmall = false;
-                    continue;
-                }
-                if (line == "小")
-                {
-                    isSmall = true;
-                    continue;
-                }
-
-                // 年月設定
-                Match yearMonthMatch = YearMonthPattern.Match(line);
-                if (yearMonthMatch.Success)
-                {
-                    string rawYear = yearMonthMatch.Groups[1].Value;
-
-                    // 支援民國年（3 碼以上）與西元年後兩碼
-                    if (int.TryParse(rawYear, out int yearNum) && yearNum > 99)
-                    {
-                        // 民國年轉西元年後兩碼
-                        year = ((yearNum + 1911) % 100).ToString();
-                    }
-                    else
-                    {
-                        year = rawYear;
-                    }
-
-                    month = yearMonthMatch.Groups[2].Value.PadLeft(2, '0');
-                    continue;
-                }
-
-                // 代號 + 口數
-                string[] parts = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2)
-                {
-                    errors.Add($"第 {lineNum} 行格式錯誤: \"{line}\"");
-                    continue;
-                }
-
-                string stockCode = parts[0];
-                if (!int.TryParse(parts[1], out int lots) || lots <= 0)
-                {
-                    errors.Add($"第 {lineNum} 行口數無效: \"{parts[1]}\"");
-                    continue;
-                }
-
-                if (string.IsNullOrEmpty(year) || string.IsNullOrEmpty(month))
-                {
-                    errors.Add($"第 {lineNum} 行尚未設定年月");
-                    continue;
-                }
-
-                items.Add(new BatchImportItem
-                {
-                    StockCode = stockCode,
-                    Lots = lots,
-                    IsSmallContract = isSmall,
-                    Year = year,
-                    Month = month
-                });
-            }
+            ParseBlock(largeText, isSmallContract: false, selectedYear, selectedMonth, items, errors, "大型合約");
+            ParseBlock(smallText, isSmallContract: true, selectedYear, selectedMonth, items, errors, "小型合約");
 
             if (errors.Count > 0 && items.Count == 0)
             {
@@ -150,6 +99,50 @@ namespace LeverageCalculator
             DialogResult = true;
         }
 
+        private static void ParseBlock(string text, bool isSmallContract, string year, string month,
+            List<BatchImportItem> items, List<string> errors, string blockLabel)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            string[] lines = text.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                int lineNum = i + 1;
+
+                if (string.IsNullOrEmpty(line))
+                {
+                    continue;
+                }
+
+                string[] parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2)
+                {
+                    errors.Add($"[{blockLabel}] 第 {lineNum} 行格式錯誤: \"{line}\"（需要：股票代號 口數）");
+                    continue;
+                }
+
+                string stockCode = parts[0];
+                if (!int.TryParse(parts[1], out int lots) || lots <= 0)
+                {
+                    errors.Add($"[{blockLabel}] 第 {lineNum} 行口數無效: \"{parts[1]}\"");
+                    continue;
+                }
+
+                items.Add(new BatchImportItem
+                {
+                    StockCode = stockCode,
+                    Lots = lots,
+                    IsSmallContract = isSmallContract,
+                    Year = year,
+                    Month = month
+                });
+            }
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;
@@ -159,6 +152,12 @@ namespace LeverageCalculator
         {
             ErrorText.Text = message;
             ErrorText.Visibility = Visibility.Visible;
+        }
+
+        private void HideError()
+        {
+            ErrorText.Text = string.Empty;
+            ErrorText.Visibility = Visibility.Collapsed;
         }
     }
 

@@ -178,14 +178,16 @@ namespace LeverageCalculator
 
         private async void BatchImportButton_Click(object sender, RoutedEventArgs e)
         {
-            BatchImportWindow importWindow = new BatchImportWindow();
+            BatchImportWindow importWindow = new BatchImportWindow(
+                _viewModel.AvailableYears, _viewModel.AvailableMonths,
+                _viewModel.NewContractYear, _viewModel.NewContractMonthNum);
             importWindow.Owner = this;
 
             if (importWindow.ShowDialog() == true && importWindow.ImportedItems.Count > 0)
             {
                 try
                 {
-                    await _viewModel.BatchImportAsync(importWindow.ImportedItems);
+                    _ = await _viewModel.BatchImportAsync(importWindow.ImportedItems);
                 }
                 catch (Exception ex)
                 {
