@@ -15,7 +15,25 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
-        /// 期貨代碼（Contract + ContractMonth，如 "DIF202603"）
+        /// 標的股票代號（如 "2330"）
+        /// </summary>
+        public string UnderlyingStockCode
+        {
+            get => _future.UnderlyingStockCode;
+            set { _future.UnderlyingStockCode = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// 合約月份（如 "2603"）
+        /// </summary>
+        public string ContractMonth
+        {
+            get => _future.ContractMonth;
+            set { _future.ContractMonth = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// 完整期貨代碼（自動組合，如 "CDF202603"）
         /// </summary>
         public string StockCode
         {
@@ -24,7 +42,7 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
-        /// 標的名稱
+        /// 合約名稱（自動從 API 填入）
         /// </summary>
         public string Name
         {

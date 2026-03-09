@@ -196,6 +196,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <!-- Row 0: 代號 + 名稱 -->
                             <TextBlock Text="代號:" VerticalAlignment="Center" Margin="2"/>
@@ -239,6 +240,8 @@
                                 </TextBox.Style>
                             </TextBox>
                             <Button Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="新增股票" Command="{Binding AddStockCommand}" Margin="3,2"/>
+                            <!-- Row 4: 批次匯入按鈕 -->
+                            <Button Grid.Row="4" Grid.ColumnSpan="4" Content="批次匯入股票" Click="StockBatchImportButton_Click" Margin="3,2"/>
                         </Grid>
                     </GroupBox>
 
@@ -368,12 +371,18 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <!-- Row 0: 代號 + 名稱 -->
+                        <!-- Row 0: 股票代號 + 年/月 -->
                         <TextBlock Text="代號:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Column="1" Text="{Binding NewFutureStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                        <TextBlock Grid.Column="2" Text="名稱:" VerticalAlignment="Center" Margin="2"/>
-                        <TextBox Grid.Column="3" Text="{Binding NewFutureName, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                        <TextBox Grid.Column="1" Text="{Binding NewUnderlyingStockCode, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                        <TextBlock Grid.Column="2" Text="合約:" VerticalAlignment="Center" Margin="2"/>
+                        <StackPanel Grid.Column="3" Orientation="Horizontal">
+                            <ComboBox ItemsSource="{Binding AvailableYears}" SelectedItem="{Binding NewContractYear}" Width="55" Margin="2"/>
+                            <TextBlock Text="年" VerticalAlignment="Center" Margin="2,0"/>
+                            <ComboBox ItemsSource="{Binding AvailableMonths}" SelectedItem="{Binding NewContractMonthNum}" Width="55" Margin="2"/>
+                            <TextBlock Text="月" VerticalAlignment="Center" Margin="2,0"/>
+                        </StackPanel>
                         <!-- Row 1: 口數 + 方向 -->
                         <TextBlock Grid.Row="1" Text="口數:" VerticalAlignment="Center" Margin="2"/>
                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewFutureLots}" Margin="2"/>
@@ -390,6 +399,8 @@
                         <!-- Row 3: 合約類型 + 新增按鈕 -->
                         <CheckBox Grid.Row="3" Grid.ColumnSpan="2" Content="小型合約 (100股/口)" IsChecked="{Binding NewFutureIsSmallContract}" VerticalAlignment="Center" Margin="5,2"/>
                         <Button Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="新增股票期貨" Command="{Binding AddFutureCommand}" Margin="3,2"/>
+                        <!-- Row 4: 批次匯入按鈕 -->
+                        <Button Grid.Row="4" Grid.ColumnSpan="4" Content="批次匯入期貨" Click="FutureBatchImportButton_Click" Margin="3,2"/>
                     </Grid>
                 </GroupBox>
 
