@@ -15,6 +15,15 @@ namespace LeverageCalculator.ViewModels
         }
 
         /// <summary>
+        /// 股票代號
+        /// </summary>
+        public string StockCode
+        {
+            get => _stock.StockCode;
+            set { _stock.StockCode = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
         /// 股票名稱
         /// </summary>
         public string Name
@@ -29,72 +38,138 @@ namespace LeverageCalculator.ViewModels
         public int Shares
         {
             get => _stock.Shares;
-            set 
-            { 
-                _stock.Shares = value; 
-                OnPropertyChanged(); 
-            }
-        }
-
-        /// <summary>
-        /// 總市值
-        /// </summary>
-        public decimal MarketValue
-        {
-            get => _stock.MarketValue;
-            set 
-            { 
-                _stock.MarketValue = value; 
-                OnPropertyChanged(); 
-                // Market value changed, we don't recalculate profit/loss anymore as it is manual input
-            }
-        }
-        
-        /// <summary>
-        /// 未實現損益 (使用者輸入)
-        /// </summary>
-        public decimal ProfitLoss 
-        {
-             get => _stock.ProfitLoss;
-             set
-             {
-                 _stock.ProfitLoss = value;
-                 OnPropertyChanged();
-                 OnPropertyChanged(nameof(ProfitLossColor));
-             }
-        }
-        
-        /// <summary>
-        /// 報酬率 (使用者輸入, 儲存原始值 0.1 = 10%)
-        /// </summary>
-        public double ProfitLossPercentage 
-        {
-            get => _stock.ProfitLossPercentage;
             set
             {
-                _stock.ProfitLossPercentage = value;
+                _stock.Shares = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(ProfitLossPercentage100)); // Update the display value
+                NotifyCalculatedProperties();
             }
         }
 
         /// <summary>
-        /// 報酬率顯示值 (使用者輸入 10 = 10%)
-        /// 用於 UI 綁定，自動轉換百分比
+        /// 進場均價
         /// </summary>
-        public double ProfitLossPercentage100
+        public decimal EntryPrice
         {
-            // Use Math.Round to prevent floating point artifacts (e.g. 0.87 becoming 0.86999...)
-            get => System.Math.Round(ProfitLossPercentage * 100, 6);
-            set => ProfitLossPercentage = value / 100;
+            get => _stock.EntryPrice;
+            set
+            {
+                _stock.EntryPrice = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
+            }
         }
 
         /// <summary>
-        /// 損益顏色 (>=0 紅色, <0 綠色)
+        /// 現價
+        /// </summary>
+        public decimal CurrentPrice
+        {
+            get => _stock.CurrentPrice;
+            set
+            {
+                _stock.CurrentPrice = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
+            }
+        }
+
+        /// <summary>
+        /// 持有類型（現股/融資）
+        /// </summary>
+        public StockType StockType
+        {
+            get => _stock.StockType;
+            set
+            {
+                _stock.StockType = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(StockTypeDisplay));
+                NotifyCalculatedProperties();
+            }
+        }
+
+        /// <summary>
+        /// 融資成數（券商借出比例）
+        /// </summary>
+        public decimal MarginRatio
+        {
+            get => _stock.MarginRatio;
+            set
+            {
+                _stock.MarginRatio = value;
+                OnPropertyChanged();
+                NotifyCalculatedProperties();
+            }
+        }
+
+        /// <summary>
+        /// 類型顯示文字
+        /// </summary>
+        public string StockTypeDisplay => StockType == StockType.Cash ? "現股" : "融資";
+
+        /// <summary>
+        /// 總成本 = 進場均價 x 股數
+        /// </summary>
+        public decimal TotalCost => EntryPrice * Shares;
+
+        /// <summary>
+        /// 總市值 = 現價 x 股數
+        /// </summary>
+        public decimal MarketValue => CurrentPrice * Shares;
+
+        /// <summary>
+        /// 市值（萬元，四捨五入至小數點後一位）
+        /// </summary>
+        public decimal MarketValueWan => Math.Round(MarketValue / 10000m, 1, MidpointRounding.AwayFromZero);
+
+        /// <summary>
+        /// 自備款（現股 = 總成本；融資 = 總成本 x (1 - 融資成數)）
+        /// </summary>
+        public decimal SelfFunded => StockType == StockType.Margin ? TotalCost * (1 - MarginRatio) : TotalCost;
+
+        /// <summary>
+        /// 未實現損益 = (現價 - 進場均價) x 股數
+        /// </summary>
+        public decimal ProfitLoss => (CurrentPrice - EntryPrice) * Shares;
+
+        /// <summary>
+        /// 損益（萬元，四捨五入至小數點後一位）
+        /// </summary>
+        public decimal ProfitLossWan => Math.Round(ProfitLoss / 10000m, 1, MidpointRounding.AwayFromZero);
+
+        /// <summary>
+        /// 報酬率（現股: 損益/總成本；融資: 損益/自備款）
+        /// </summary>
+        public double ProfitLossPercentage
+        {
+            get
+            {
+                decimal basis = StockType == StockType.Margin ? SelfFunded : TotalCost;
+                return basis != 0 ? (double)(ProfitLoss / basis) : 0;
+            }
+        }
+
+        /// <summary>
+        /// 損益顏色 (>=0 紅色, &lt;0 綠色)
         /// </summary>
         public string ProfitLossColor => ProfitLoss >= 0 ? "Red" : "Green";
 
-        // Expose the model for saving purposes
+        /// <summary>
+        /// 取得底層 Model（供序列化使用）
+        /// </summary>
         public StockItem Model => _stock;
+
+        private void NotifyCalculatedProperties()
+        {
+            OnPropertyChanged(nameof(TotalCost));
+            OnPropertyChanged(nameof(MarketValue));
+            OnPropertyChanged(nameof(MarketValueWan));
+            OnPropertyChanged(nameof(SelfFunded));
+            OnPropertyChanged(nameof(ProfitLoss));
+            OnPropertyChanged(nameof(ProfitLossWan));
+            OnPropertyChanged(nameof(ProfitLossPercentage));
+            OnPropertyChanged(nameof(ProfitLossColor));
+        }
     }
 }

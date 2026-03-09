@@ -6,6 +6,10 @@ namespace LeverageCalculator.Models
     public class StockItem
     {
         /// <summary>
+        /// 股票代號（如 "2330"）
+        /// </summary>
+        public string StockCode { get; set; } = string.Empty;
+        /// <summary>
         /// 股票名稱
         /// </summary>
         public string Name { get; set; } = string.Empty;
@@ -14,16 +18,20 @@ namespace LeverageCalculator.Models
         /// </summary>
         public int Shares { get; set; }
         /// <summary>
-        /// 帳面損益 (使用者輸入)
+        /// 進場均價
         /// </summary>
-        public decimal ProfitLoss { get; set; }
+        public decimal EntryPrice { get; set; }
         /// <summary>
-        /// 報酬率 (使用者輸入, 1.5 = 1.5%)
+        /// 現價
         /// </summary>
-        public double ProfitLossPercentage { get; set; }
+        public decimal CurrentPrice { get; set; }
         /// <summary>
-        /// 總市值
+        /// 持有類型（現股/融資）
         /// </summary>
-        public decimal MarketValue { get; set; }
+        public StockType StockType { get; set; } = StockType.Cash;
+        /// <summary>
+        /// 融資成數（券商借出比例，預設 0.6 = 融資六成）
+        /// </summary>
+        public decimal MarginRatio { get; set; } = 0.6m;
     }
 }
