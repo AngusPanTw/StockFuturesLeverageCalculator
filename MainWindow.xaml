@@ -262,18 +262,18 @@
                                     <TextBlock Text="{Binding CashStockProfitLossPercentage, StringFormat=P2}" Foreground="{Binding CashStockProfitLossColor}" FontWeight="Bold" FontSize="13"/>
                                 </StackPanel>
                             </Border>
-                            <DataGrid ItemsSource="{Binding CashStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
+                            <DataGrid x:Name="CashStocksGrid" ItemsSource="{Binding CashStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto" HorizontalScrollBarVisibility="Auto">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTemplateColumn Header="損益" IsReadOnly="True">
+                                    <DataGridTextColumn Header="市值(萬)" Binding="{Binding MarketValueWan, StringFormat={}{0:N1}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTemplateColumn Header="損益(萬)" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                                <TextBlock Text="{Binding ProfitLossWan, StringFormat={}{0:N1}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -309,18 +309,18 @@
                                     <TextBlock Text="{Binding TotalMarginProfitLossPercentage, StringFormat=P2}" Foreground="{Binding TotalMarginProfitLossColor}" FontWeight="Bold" FontSize="13"/>
                                 </StackPanel>
                             </Border>
-                            <DataGrid ItemsSource="{Binding MarginStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
+                            <DataGrid x:Name="MarginStocksGrid" ItemsSource="{Binding MarginStocks}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto" HorizontalScrollBarVisibility="Auto">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="股數" Binding="{Binding Shares, StringFormat=N0}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="均價" Binding="{Binding EntryPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                     <DataGridTextColumn Header="現價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTextColumn Header="市值" Binding="{Binding MarketValue, StringFormat={}{0:#,##0}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                    <DataGridTemplateColumn Header="損益" IsReadOnly="True">
+                                    <DataGridTextColumn Header="市值(萬)" Binding="{Binding MarketValueWan, StringFormat={}{0:N1}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                    <DataGridTemplateColumn Header="損益(萬)" IsReadOnly="True">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                                <TextBlock Text="{Binding ProfitLossWan, StringFormat={}{0:N1}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -411,7 +411,7 @@
                     </Grid.RowDefinitions>
                     
                     <GroupBox Header="大型合約 (2000股)" Margin="0,0,0,5">
-                        <DataGrid ItemsSource="{Binding LargeFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
+                        <DataGrid x:Name="LargeFuturesGrid" ItemsSource="{Binding LargeFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto" HorizontalScrollBarVisibility="Auto">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
@@ -419,11 +419,11 @@
                                 <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTemplateColumn Header="損益" IsReadOnly="True">
+                                <DataGridTextColumn Header="曝險(萬)" Binding="{Binding ExposureWan, StringFormat={}{0:N1}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                <DataGridTemplateColumn Header="損益(萬)" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                            <TextBlock Text="{Binding ProfitLossWan, StringFormat={}{0:N1}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -446,7 +446,7 @@
                     </GroupBox>
 
                     <GroupBox Grid.Row="1" Header="小型合約 (100股)" Margin="0,5,0,0">
-                        <DataGrid ItemsSource="{Binding SmallFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="*" HorizontalScrollBarVisibility="Disabled">
+                        <DataGrid x:Name="SmallFuturesGrid" ItemsSource="{Binding SmallFutures}" AutoGenerateColumns="False" CanUserAddRows="False" ColumnWidth="Auto" HorizontalScrollBarVisibility="Auto">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="代號" Binding="{Binding StockCode}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="名稱" Binding="{Binding Name}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
@@ -454,11 +454,11 @@
                                 <DataGridTextColumn Header="方向" Binding="{Binding Position}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="成本" Binding="{Binding CostPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
                                 <DataGridTextColumn Header="市價" Binding="{Binding CurrentPrice, StringFormat={}{0:#,##0.##}}" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTextColumn Header="曝險市值" Binding="{Binding Exposure, StringFormat=N0}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
-                                <DataGridTemplateColumn Header="損益" IsReadOnly="True">
+                                <DataGridTextColumn Header="曝險(萬)" Binding="{Binding ExposureWan, StringFormat={}{0:N1}}" IsReadOnly="True" ElementStyle="{StaticResource CenterAlignedCellStyle}"/>
+                                <DataGridTemplateColumn Header="損益(萬)" IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ProfitLoss, StringFormat={}{0:#,##0}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
+                                            <TextBlock Text="{Binding ProfitLossWan, StringFormat={}{0:N1}}" Style="{StaticResource CenterAlignedCellStyle}" Foreground="{Binding ProfitLossColor}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>

@@ -119,6 +119,11 @@ namespace LeverageCalculator.ViewModels
         public decimal MarketValue => CurrentPrice * Shares;
 
         /// <summary>
+        /// 市值（萬元，四捨五入至小數點後一位）
+        /// </summary>
+        public decimal MarketValueWan => Math.Round(MarketValue / 10000m, 1, MidpointRounding.AwayFromZero);
+
+        /// <summary>
         /// 自備款（現股 = 總成本；融資 = 總成本 x (1 - 融資成數)）
         /// </summary>
         public decimal SelfFunded => StockType == StockType.Margin ? TotalCost * (1 - MarginRatio) : TotalCost;
@@ -127,6 +132,11 @@ namespace LeverageCalculator.ViewModels
         /// 未實現損益 = (現價 - 進場均價) x 股數
         /// </summary>
         public decimal ProfitLoss => (CurrentPrice - EntryPrice) * Shares;
+
+        /// <summary>
+        /// 損益（萬元，四捨五入至小數點後一位）
+        /// </summary>
+        public decimal ProfitLossWan => Math.Round(ProfitLoss / 10000m, 1, MidpointRounding.AwayFromZero);
 
         /// <summary>
         /// 報酬率（現股: 損益/總成本；融資: 損益/自備款）
@@ -154,8 +164,10 @@ namespace LeverageCalculator.ViewModels
         {
             OnPropertyChanged(nameof(TotalCost));
             OnPropertyChanged(nameof(MarketValue));
+            OnPropertyChanged(nameof(MarketValueWan));
             OnPropertyChanged(nameof(SelfFunded));
             OnPropertyChanged(nameof(ProfitLoss));
+            OnPropertyChanged(nameof(ProfitLossWan));
             OnPropertyChanged(nameof(ProfitLossPercentage));
             OnPropertyChanged(nameof(ProfitLossColor));
         }

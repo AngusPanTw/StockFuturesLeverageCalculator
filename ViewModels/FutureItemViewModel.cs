@@ -132,6 +132,11 @@ namespace LeverageCalculator.ViewModels
         public decimal Exposure => CurrentPrice * SharesPerLot * Lots;
 
         /// <summary>
+        /// 曝險市值（萬元，四捨五入至小數點後一位）
+        /// </summary>
+        public decimal ExposureWan => Math.Round(Exposure / 10000m, 1, MidpointRounding.AwayFromZero);
+
+        /// <summary>
         /// 未實現損益
         /// </summary>
         public decimal ProfitLoss
@@ -144,6 +149,11 @@ namespace LeverageCalculator.ViewModels
                 return diff * SharesPerLot * Lots;
             }
         }
+
+        /// <summary>
+        /// 損益（萬元，四捨五入至小數點後一位）
+        /// </summary>
+        public decimal ProfitLossWan => Math.Round(ProfitLoss / 10000m, 1, MidpointRounding.AwayFromZero);
 
         /// <summary>
         /// 報酬率 (%)
@@ -170,7 +180,9 @@ namespace LeverageCalculator.ViewModels
         private void NotifyCalculatedProperties()
         {
             OnPropertyChanged(nameof(Exposure));
+            OnPropertyChanged(nameof(ExposureWan));
             OnPropertyChanged(nameof(ProfitLoss));
+            OnPropertyChanged(nameof(ProfitLossWan));
             OnPropertyChanged(nameof(ProfitLossPercentage));
             OnPropertyChanged(nameof(ProfitLossColor));
         }
