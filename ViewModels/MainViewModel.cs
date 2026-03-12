@@ -15,7 +15,7 @@ namespace LeverageCalculator.ViewModels
         private readonly PortfolioStorageService _storageService;
         private readonly StockPriceService _stockPriceService;
         private readonly FuturesPriceService _futuresPriceService;
-        private readonly ContractMappingService _contractMappingService;
+        private readonly StockInfoService _stockInfoService;
 
         // --- Collections ---
         /// <summary>
@@ -292,10 +292,10 @@ namespace LeverageCalculator.ViewModels
             _storageService = new PortfolioStorageService("portfolio.json");
             _stockPriceService = new StockPriceService();
             _futuresPriceService = new FuturesPriceService();
-            _contractMappingService = new ContractMappingService();
+            _stockInfoService = new StockInfoService();
 
-            // 啟動時預熱 TAIFEX 標的資料快取
-            _ = _contractMappingService.PreloadCacheAsync();
+            // 啟動時預熱全部快取（TSE + TPEX + TAIFEX 並行載入）
+            _ = _stockInfoService.PreloadCacheAsync();
 
             // 初始化年月選項
             int currentTwoDigitYear = DateTime.Now.Year % 100;
@@ -449,7 +449,7 @@ namespace LeverageCalculator.ViewModels
                 if (!nameCache.TryGetValue(item.StockCode, out string? stockName))
                 {
                     PriceUpdateStatus = $"正在查詢 {item.StockCode} 的股票名稱... ({processedCount}/{items.Count})";
-                    stockName = await _contractMappingService.GetStockNameAsync(item.StockCode);
+                    stockName = await _stockInfoService.GetStockNameAsync(item.StockCode);
                     nameCache[item.StockCode] = stockName;
                 }
 
@@ -513,7 +513,7 @@ namespace LeverageCalculator.ViewModels
 
             PriceUpdateStatus = $"正在查詢 {stockCode} 的{contractType}合約代號...";
 
-            ContractInfo? contractInfo = await _contractMappingService.GetContractInfoAsync(stockCode, NewFutureIsSmallContract);
+            ContractInfo? contractInfo = await _stockInfoService.GetContractInfoAsync(stockCode, NewFutureIsSmallContract);
 
             if (contractInfo == null)
             {
@@ -588,7 +588,7 @@ namespace LeverageCalculator.ViewModels
                 string contractType = item.IsSmallContract ? "小型" : "大型";
                 PriceUpdateStatus = $"正在查詢 {item.StockCode} 的{contractType}合約代號... ({successCount + failures.Count + 1}/{items.Count})";
 
-                ContractInfo? contractInfo = await _contractMappingService.GetContractInfoAsync(item.StockCode, item.IsSmallContract);
+                ContractInfo? contractInfo = await _stockInfoService.GetContractInfoAsync(item.StockCode, item.IsSmallContract);
                 if (contractInfo == null)
                 {
                     failures.Add($"{item.StockCode}({contractType}): 查無合約");
@@ -797,7 +797,7 @@ namespace LeverageCalculator.ViewModels
                 }
             }
 
-            // === 補查期貨合約代號（StockCode 為空時用 ContractMappingService 查詢）===
+            // === 補查期貨合約代號（StockCode 為空時用 StockInfoService 查詢）===
             foreach (FutureItemViewModel future in AllFutures)
             {
                 if (!string.IsNullOrEmpty(future.StockCode?.Trim()))
@@ -812,7 +812,7 @@ namespace LeverageCalculator.ViewModels
                 }
 
                 PriceUpdateStatus = $"正在查詢 {underlyingCode} 的合約代號...";
-                ContractInfo? info = await _contractMappingService.GetContractInfoAsync(underlyingCode, future.IsSmallContract);
+                ContractInfo? info = await _stockInfoService.GetContractInfoAsync(underlyingCode, future.IsSmallContract);
                 if (info != null)
                 {
                     future.StockCode = info.ContractCode + NormalizeContractMonth(future.ContractMonth);

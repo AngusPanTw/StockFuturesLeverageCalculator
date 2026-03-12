@@ -24,7 +24,7 @@ dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true 
 
 - **Models/** — 資料模型：`StockItem`、`FutureItem`、`Portfolio`、`StockType` 列舉（Cash/Margin）、`PositionType` 列舉（Long/Short）
 - **ViewModels/** — `MainViewModel` 統籌所有邏輯；`StockItemViewModel` 與 `FutureItemViewModel` 包裝 Model 並提供計算屬性與變更通知；`BaseViewModel` 提供 `INotifyPropertyChanged`；`RelayCommand` 實作 `ICommand`
-- **Services/** — `PortfolioStorageService` 負責 JSON 持久化至 `portfolio.json`；`StockPriceService` 查詢 TWSE/TPEX 股票收盤價；`FuturesPriceService` 查詢 TAIFEX 期貨收盤價；`ContractMappingService` 查詢 TAIFEX 合約代號與股票名稱對應
+- **Services/** — `PortfolioStorageService` 負責 JSON 持久化至 `portfolio.json`；`StockPriceService` 查詢 TWSE/TPEX 股票收盤價；`FuturesPriceService` 查詢 TAIFEX 期貨收盤價；`StockInfoService` 統一管理股票名稱查詢（TSE/TPEX）與期貨合約代號查詢（TAIFEX）
 - **Converters/** — `EnumToBooleanConverter` 用於 RadioButton 的資料繫結（支援 `StockType` 和 `PositionType`）
 - **View** — `MainWindow.xaml` 為唯一視窗，2×3 Grid 佈局（Row 0: 總資產+公式說明 | Row 1: 股票庫存+期貨庫存 | 結算報告跨兩行）；`BatchImportWindow` 期貨批次匯入對話框；`StockBatchImportWindow` 股票批次匯入對話框
 
@@ -57,50 +57,27 @@ dotnet publish -r win-x64 -c Release --self-contained -p:PublishSingleFile=true 
 槓桿倍數 = 總曝險 / 淨資產
 ```
 
-## ContractMappingService（合約代號查詢服務）
+**萬元顯示：** ViewModel 提供 `*Wan` 屬性（`MarketValueWan`、`ProfitLossWan`、`ExposureWan`），將數值除以 10,000 並四捨五入至小數一位，供 DataGrid 欄位繫結使用。
 
-透過 TAIFEX `SingleStockFuturesMargining` API 查詢股票代號與合約代號的對應關係：
-- `GetContractInfoAsync(stockCode, isSmallContract)` — 以股票代號（如 `"2330"`）查詢合約代號（如 `"CDF"`）
-- `GetStockNameAsync(stockCode)` — 從合約名稱中擷取股票名稱（移除「小型」和「期貨」字樣）
+## StockInfoService（股票資訊統一查詢服務）
+
+統一管理三份快取，啟動時以 `Task.WhenAll` 並行預熱：
+
+| 快取 | API 來源 | 資料結構 | 用途 |
+|------|----------|----------|------|
+| TSE 上市名稱表 | `STOCK_DAY_AVG_ALL` | `Dictionary<Code, Name>` | 現股名稱查詢 |
+| TPEX 上櫃名稱表 | `tpex_mainboard_daily_close_quotes` | `Dictionary<Code, Name>` | 現股名稱查詢 |
+| TAIFEX 股期對應表 | `SingleStockFuturesMargining` | `List<JsonElement>` | 期貨合約代號/名稱查詢 |
+
+- `GetStockNameAsync(stockCode)` — 查 TSE → TPEX fallback，涵蓋全市場上市+上櫃股票
+- `GetContractInfoAsync(stockCode, isSmallContract)` — 查 TAIFEX，以股票代號查詢期貨合約代號（如 `"2330"` → `"CDF"`）
 - 啟動時透過 `PreloadCacheAsync()` 預載快取（fire-and-forget），使用 `SemaphoreSlim` 確保執行緒安全
 
 ## 批次匯入
 
-- **期貨批次匯入**（`BatchImportWindow`）：大型/小型合約分區輸入，每行格式 `代號 口數 成本價`，選擇年月後匯入。透過 `ContractMappingService` 自動查詢合約代號與名稱。
-- **股票批次匯入**（`StockBatchImportWindow`）：現股/融資分區輸入，每行格式 `代號 股數 進場價`，自動查詢股票名稱。
+- **期貨批次匯入**（`BatchImportWindow`）：大型/小型合約分區輸入，每行格式 `代號 口數 成本價`，選擇年月後匯入。透過 `StockInfoService.GetContractInfoAsync` 自動查詢合約代號與名稱。
+- **股票批次匯入**（`StockBatchImportWindow`）：現股/融資分區輸入，每行格式 `代號 股數 進場價`，透過 `StockInfoService.GetStockNameAsync` 自動查詢股票名稱（TSE/TPEX 全市場涵蓋）。
 - 支援部分成功：驗證失敗的行會標示錯誤，成功的行仍可匯入。
-
-## 收盤價查詢服務
-
-### StockCode 欄位
-
-`StockItem.StockCode` 和 `FutureItem.StockCode` 用於自動查價時比對 API 資料：
-- **股票**：台股代號，如 `"2330"`、`"2317"`。先查 TWSE（上市），無資料再查 TPEX（上櫃）。
-- **期貨**：`Contract` + `ContractMonth(Week)` 組合，如 `"DIF202603"`。也支援短格式 `"DIF2603"`（`NormalizeFuturesCode` 會補為 6 碼）。
-- 欄位為空時，查價邏輯會透過 `ContractMappingService` 自動補齊合約代號。舊版 `portfolio.json` 不含此欄位，反序列化自動為 `""`，向後相容。
-
-### FutureItem 新增欄位
-
-- `UnderlyingStockCode` — 標的股票代號（如 `"2330"`），用於查詢合約代號
-- `ContractMonth` — 合約年月（如 `"2603"`），與查詢到的合約代號組合產生 `StockCode`
-- `Name` — 合約名稱（如 `"台積電期貨"`），自動從 TAIFEX API 填入
-
-### API 資料來源
-
-| 服務 | API 端點 | 說明 |
-|------|----------|------|
-| `StockPriceService` | TWSE `exchangeReport/STOCK_DAY` | 上市股票每日收盤價（`data` 陣列最後一筆 index 6） |
-| `StockPriceService` | TPEX `afterTrading/tradingStock` | 上櫃股票每日收盤價（`tables[0].data` 最後一筆 index 6） |
-| `FuturesPriceService` | TAIFEX `DailyMarketReportFut` | 一次回傳所有期貨行情，取 `Last` 欄位。過濾 `TradingSession="一般"` 且排除 `ContractMonth(Week)` 含 `/` 的轉倉資料 |
-| `ContractMappingService` | TAIFEX `SingleStockFuturesMargining` | 查詢股票代號與合約代號對應，支援大型/小型合約區分 |
-
-### 查詢流程（MainViewModel.ExecuteFetchAllPricesAsync）
-
-1. 逐檔連續查詢股票（TWSE → TPEX fallback），無預設延遲；單筆查詢失敗時自動重試（漸進式延遲 2 秒、4 秒，最多 2 次）
-2. 同代號股票使用快取避免重複查詢
-3. 期貨若缺少 `StockCode`，自動透過 `ContractMappingService` 查詢合約代號並補齊
-4. 一次呼叫 TAIFEX API 取得全部期貨行情，建立 `Dictionary<string, FuturesPriceResult>` 後批次比對
-5. 更新 `CurrentPrice` 後自動觸發 `RecalculateAll()`
 
 ## 核心資料流
 
